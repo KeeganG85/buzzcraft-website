@@ -9,7 +9,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata = pageMetadata({
   title: "Pricing",
   description:
-    "Starter Site, Growth Website and Authority + Automation, from prices, beside the R18,500 Visibility and Lead Recovery Sprint.",
+    "Starter Site, Growth Website and Authority + Automation, from prices excl. VAT, beside the R18,500 excl. VAT Visibility and Lead Recovery Sprint.",
   path: "/pricing",
 });
 
@@ -47,7 +47,8 @@ export default function PricingPage() {
         </div>
         <div>
           <p className="tnum text-4xl font-semibold">{formatZar(sprint.price)}</p>
-          <p className="mt-2 text-sm text-mid">{sprint.deposit}</p>
+          <p className="mt-2 text-sm text-mid">excl. VAT</p>
+          <p className="mt-1 text-sm text-mid">{sprint.deposit}</p>
           <p className="mt-1 text-sm text-mid">{sprint.workingDays} working days</p>
           <WhatsAppLink
             className={`${buttonClass("primary")} mt-6`}

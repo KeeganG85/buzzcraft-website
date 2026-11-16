@@ -9,7 +9,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata = pageMetadata({
   title: "Visibility and Lead Recovery Sprint",
   description:
-    "The Visibility and Lead Recovery Sprint is R18,500, with a 50% deposit and six deliverables over 10 working days.",
+    "The Visibility and Lead Recovery Sprint is R18,500 excl. VAT, with a 50% deposit and six deliverables over 10 working days.",
   path: "/sprint",
 });
 
@@ -41,7 +41,7 @@ export default function SprintPage() {
           <div>
             <dt className="text-sm text-mid">Price</dt>
             <dd className="tnum mt-1 text-3xl font-semibold">{formatZar(sprint.price)}</dd>
-            <dd className="text-sm text-mid">50% deposit to book</dd>
+            <dd className="text-sm text-mid">excl. VAT. 50% deposit to book</dd>
           </div>
           <div>
             <dt className="text-sm text-mid">Timeline</dt>

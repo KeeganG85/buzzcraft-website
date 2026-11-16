@@ -43,7 +43,8 @@ describe("package prices", () => {
     const sprintCopy = fs.readFileSync("content/sprint.ts", "utf8");
     for (const text of [pricing, sprintPage, sprintCopy]) {
       expect(text).not.toContain("R25,000");
-      expect(text).not.toContain("VAT");
+      expect(text).toContain("excl. VAT");
+      expect(text).not.toMatch(/VAT number[:\s]*\d/);
       expect(text).not.toContain("contract length");
       expect(text).not.toContain("cancellation");
     }

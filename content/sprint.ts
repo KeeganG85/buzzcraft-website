@@ -68,7 +68,7 @@ export const sprintFaqs = [
   {
     question: "How much does the Sprint cost and what are the payment terms?",
     answer:
-      "The Visibility and Lead Recovery Sprint is R18,500, fixed. A 50% deposit books your slot and the balance is due at handover. No hidden extras inside that scope.",
+      "The Visibility and Lead Recovery Sprint is R18,500 excl. VAT, fixed. A 50% deposit books your slot and the balance is due at handover. No hidden extras inside that scope.",
   },
   {
     question: "How long does the Sprint take?",

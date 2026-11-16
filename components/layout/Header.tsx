@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/brand/Logo";
+import { MobileNav } from "@/components/layout/MobileNav";
 import { WhatsAppLink } from "@/components/marketing/WhatsAppLink";
 import { buttonClass } from "@/components/ui/primitives";
 import { primaryNav } from "@/lib/nav";
@@ -7,7 +8,7 @@ import { primaryNav } from "@/lib/nav";
 export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-charcoal/90 backdrop-blur-md">
-      <div className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-4 px-5">
+      <div className="relative mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-4 px-5">
         <Link href="/" aria-label="BuzzCraft home" className="shrink-0">
           <Wordmark height={32} />
         </Link>
@@ -20,7 +21,10 @@ export function Header() {
             ))}
           </nav>
         ) : null}
-        <WhatsAppLink className={buttonClass("primary")}>WhatsApp</WhatsAppLink>
+        <div className="flex items-center gap-2">
+          <MobileNav items={primaryNav} />
+          <WhatsAppLink className={buttonClass("primary")}>WhatsApp</WhatsAppLink>
+        </div>
       </div>
     </header>
   );

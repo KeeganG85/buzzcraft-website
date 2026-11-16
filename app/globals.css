@@ -60,21 +60,48 @@ body {
 
 @keyframes mascot-settle {
   from {
-    opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(8px);
   }
   to {
-    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes mascot-idle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mascot-settle {
+    animation: mascot-settle var(--duration-story) var(--ease-enter) both;
+  }
+
+  .mascot-idle {
+    animation: mascot-idle 7s ease-in-out 1.1s infinite;
+  }
+
+  main article {
+    transition: transform var(--duration-fast) var(--ease-enter);
+  }
+
+  main article:hover {
+    transform: translateY(-2px);
+  }
+
+  main article:active {
     transform: translateY(0);
   }
 }
 
-.mascot-settle {
-  animation: mascot-settle var(--duration-story) var(--ease-enter) both;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .mascot-settle {
+  .mascot-settle,
+  .mascot-idle {
     animation: none;
   }
 }

@@ -31,7 +31,7 @@ export function Mascot({ pose, alt = "", priority = false, className }: MascotPr
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : "auto"}
         decoding="async"
-        className="h-auto w-full"
+        className="mascot-idle h-auto w-full"
       />
     </picture>
   );

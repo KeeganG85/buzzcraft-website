@@ -1,84 +1,76 @@
 import Link from "next/link";
-import Image from "next/image";
-import { Container } from "@/components/ui/primitives";
-import { siteConfig, isVerified } from "@/lib/site-config";
-
-const footerNav = [
-  { href: "/services", label: "Services" },
-  { href: "/sprint", label: "The Sprint" },
-  { href: "/work", label: "Work" },
-  { href: "/insights", label: "Insights" },
-  { href: "/tools", label: "Free tools" },
-  { href: "/scorecard", label: "Search Visibility Scorecard" },
-];
+import { Wordmark } from "@/components/brand/Logo";
+import { SocialIcon } from "@/components/icons/SocialIcon";
+import { footerExplore } from "@/lib/nav";
+import { siteConfig } from "@/lib/site-config";
 
 export function Footer() {
-  const year = new Date().getFullYear();
-  const socials = Object.entries(siteConfig.social).filter(([, url]) => isVerified(url));
-
   return (
-    <footer className="border-t border-line bg-ink">
-      <Container className="py-14">
-        <div className="grid gap-10 md:grid-cols-3">
-          <div>
-            <Image src="/brand/buzzcraft-logo.png" alt="BuzzCraft" width={148} height={21} />
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-mid">
-              {siteConfig.tagline} A growth systems agency for ambitious South African businesses,
-              based in {siteConfig.city}, {siteConfig.region}.
-            </p>
-          </div>
+    <footer className="border-t border-white/10 bg-ink">
+      <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-14 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div>
+          <Wordmark height={34} />
+          <p className="mt-4 max-w-sm text-sm leading-6 text-mid">{siteConfig.tagline}</p>
+          <p className="mt-3 max-w-sm text-sm leading-6 text-mid">
+            A growth systems agency for ambitious South African businesses, based in {siteConfig.city},{" "}
+            {siteConfig.region}.
+          </p>
+          <ul className="mt-5 flex gap-3">
+            {siteConfig.social.map((profile) => (
+              <li key={profile.id}>
+                <a
+                  href={profile.href}
+                  aria-label={profile.label}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-gold hover:border-gold"
+                >
+                  <SocialIcon id={profile.id} />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-          <nav aria-label="Footer">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-gold">Explore</h2>
-            <ul className="space-y-1">
-              {footerNav.map((item) => (
+        {footerExplore.length > 0 ? (
+          <div>
+            <p className="eyebrow">Explore</p>
+            <ul className="mt-4 space-y-2">
+              {footerExplore.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} className="inline-flex min-h-10 items-center text-sm text-soft hover:text-gold">
+                  <Link href={item.href} className="text-sm text-soft hover:text-gold">
                     {item.label}
                   </Link>
                 </li>
               ))}
             </ul>
-          </nav>
-
-          <div>
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-gold">Contact</h2>
-            <ul className="space-y-1 text-sm text-soft">
-              <li>
-                <a href={`mailto:${siteConfig.email}`} className="inline-flex min-h-10 items-center hover:text-gold">
-                  {siteConfig.email}
-                </a>
-              </li>
-              <li className="text-mid">
-                {siteConfig.city}, {siteConfig.region}, {siteConfig.country}
-              </li>
-              {socials.map(([name, url]) => (
-                <li key={name}>
-                  <a
-                    href={url}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                    className="inline-flex min-h-10 items-center capitalize hover:text-gold"
-                  >
-                    {name}
-                  </a>
-                </li>
-              ))}
-            </ul>
           </div>
-        </div>
+        ) : (
+          <div />
+        )}
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-line pt-6 text-sm text-mid sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            © <span className="tnum">{year}</span> {siteConfig.legalName}. All rights reserved.
-          </p>
-          <div className="flex gap-6">
-            <Link href={siteConfig.privacyPolicyPath} className="inline-flex min-h-10 items-center hover:text-gold">
-              Privacy Policy (POPIA)
-            </Link>
-          </div>
+        <div>
+          <p className="eyebrow">Contact</p>
+          <ul className="mt-4 space-y-2 text-sm">
+            <li>
+              <a className="text-soft hover:text-gold" href={siteConfig.whatsappHref}>
+                WhatsApp {siteConfig.whatsappDisplay}
+              </a>
+            </li>
+            <li>
+              <a className="text-soft hover:text-gold" href={`mailto:${siteConfig.email}`}>
+                {siteConfig.email}
+              </a>
+            </li>
+            <li className="text-mid">
+              {siteConfig.city}, {siteConfig.region}, {siteConfig.country}
+            </li>
+          </ul>
         </div>
-      </Container>
+      </div>
+      <div className="border-t border-white/10">
+        <p className="mx-auto w-full max-w-6xl px-5 py-4 text-xs text-mid">
+          © {new Date().getFullYear()} BuzzCraft. All rights reserved.
+        </p>
+      </div>
     </footer>
   );
 }

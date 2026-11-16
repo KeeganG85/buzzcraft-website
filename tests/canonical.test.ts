@@ -14,14 +14,14 @@ describe("canonical policy", () => {
   });
 
   it("keeps legacy redirects permanent and does not send about or contact away", () => {
-    expect(legacyRedirects.every((rule) => rule.permanent)).toBe(true);
+    expect(legacyRedirects.every((rule) => ("permanent" in rule ? rule.permanent : rule.statusCode === 301))).toBe(true);
     const sources = legacyRedirects.map((rule) => rule.source);
     expect(sources).toContain("/blog/:slug");
     expect(sources).not.toContain("/about");
     expect(sources).not.toContain("/contact");
     const promptLibrary = legacyRedirects.find((rule) => rule.source === "/promptlibrary");
     expect(promptLibrary?.destination).toBe("/120promptos");
-    expect(promptLibrary?.permanent).toBe(true);
+    expect(promptLibrary && "statusCode" in promptLibrary && promptLibrary.statusCode).toBe(301);
   });
 
   it("keeps drafts, studio and the legacy prompt library out of the sitemap list", () => {

@@ -1,8 +1,6 @@
-export type RedirectRule = {
-  source: string;
-  destination: string;
-  permanent: true;
-};
+export type RedirectRule =
+  | { source: string; destination: string; permanent: true }
+  | { source: string; destination: string; statusCode: 301 };
 
 /**
  * Legacy paths from the earlier one-page site.
@@ -20,6 +18,6 @@ export const legacyRedirects: RedirectRule[] = [
    * used that name. FOUND is a different open library, so /promptlibrary
    * goes to the 120 Prompt OS product page, not to /found or the tools hub.
    */
-  { source: "/promptlibrary", destination: "/120promptos", permanent: true },
-  { source: "/promptlibrary/:path*", destination: "/120promptos", permanent: true },
+  { source: "/promptlibrary", destination: "/120promptos", statusCode: 301 },
+  { source: "/promptlibrary/:path*", destination: "/120promptos", statusCode: 301 },
 ];

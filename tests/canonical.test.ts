@@ -30,6 +30,9 @@ describe("canonical policy", () => {
       "/services/lead-systems",
       "/pricing",
       "/sprint",
+      "/contact",
+      "/scorecard",
+      "/privacy",
     ]);
     expect(blockedPaths).toContain("/promptlibrary/");
     expect(blockedPaths).toContain("/studio/");

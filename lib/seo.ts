@@ -1,51 +1,51 @@
 import type { Metadata } from "next";
-import { siteConfig } from "./site-config";
+import { siteConfig } from "@/lib/site-config";
 
-interface PageSeo {
-  title: string;
-  description: string;
-  path: string;
-  noindex?: boolean;
-  ogImage?: string;
-  type?: "website" | "article";
-  publishedTime?: string;
-  modifiedTime?: string;
-  authors?: string[];
+/**
+ * Preferred host is https://www.buzzcraft.co.za.
+ * One trailing-slash policy: directory routes end with a slash, matching the
+ * live sitemap. File URLs such as /sitemap.xml do not gain a slash.
+ * next.config sets trailingSlash: true so Next.js redirects the other form.
+ */
+export function canonicalPath(path: string): string {
+  if (path === "/" || path === "") return "/";
+  const withLead = path.startsWith("/") ? path : `/${path}`;
+  if (/\.[a-z0-9]+$/i.test(withLead)) return withLead;
+  return withLead.endsWith("/") ? withLead : `${withLead}/`;
 }
 
-/** Build consistent per-route metadata with canonical URLs and social cards. */
+export function absoluteUrl(path: string): string {
+  return new URL(canonicalPath(path), siteConfig.url).toString();
+}
+
 export function pageMetadata({
   title,
   description,
   path,
-  noindex = false,
-  ogImage = "/brand/buzz-editorial.webp",
-  type = "website",
-  publishedTime,
-  modifiedTime,
-  authors,
-}: PageSeo): Metadata {
-  const url = `${siteConfig.url}${path}`;
+}: {
+  title: string;
+  description: string;
+  path: string;
+}): Metadata {
+  const canonical = absoluteUrl(path);
   return {
     title,
     description,
-    alternates: { canonical: url },
-    robots: noindex ? { index: false, follow: false } : undefined,
+    alternates: { canonical },
     openGraph: {
       title,
       description,
-      url,
+      url: canonical,
       siteName: siteConfig.name,
       locale: "en_ZA",
-      type,
-      images: [{ url: ogImage, width: 900, height: 1351, alt: `${siteConfig.name} — ${siteConfig.tagline}` }],
-      ...(type === "article" ? { publishedTime, modifiedTime, authors } : {}),
+      type: "website",
+      images: [{ url: "/brand/og.png", width: 1200, height: 630, alt: "BuzzCraft" }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [ogImage],
+      images: ["/brand/og.png"],
     },
   };
 }

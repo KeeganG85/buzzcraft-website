@@ -1,15 +1,15 @@
 import type { MetadataRoute } from "next";
-import { siteConfig } from "@/lib/site-config";
+import { blockedPaths } from "@/lib/routes";
+import { absoluteUrl } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [
-      {
-        userAgent: "*",
-        allow: "/",
-        disallow: ["/scorecard/thank-you", "/api/"],
-      },
-    ],
-    sitemap: `${siteConfig.url}/sitemap.xml`,
+    rules: {
+      userAgent: "*",
+      allow: "/",
+      disallow: [...blockedPaths],
+    },
+    sitemap: absoluteUrl("/sitemap.xml"),
+    host: "https://www.buzzcraft.co.za",
   };
 }

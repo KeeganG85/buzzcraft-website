@@ -1,18 +1,16 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { siteConfig } from "@/lib/site-config";
+import { Header } from "@/components/layout/Header";
 import {
   organizationJsonLd,
   professionalServiceJsonLd,
-  webSiteJsonLd,
   serializeJsonLd,
+  webSiteJsonLd,
 } from "@/lib/jsonld";
+import { siteConfig } from "@/lib/site-config";
 
-// DM Sans is self-hosted (variable weight 100–1000): no external font
-// requests at build or run time, which is faster and POPIA-friendlier.
 const dmSans = localFont({
   src: [
     { path: "./fonts/dm-sans-latin-wght-normal.woff2", style: "normal", weight: "100 1000" },
@@ -25,18 +23,17 @@ const dmSans = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: `${siteConfig.name} — Johannesburg Growth Systems Agency`,
-    template: `%s — ${siteConfig.name}`,
+    default: "BuzzCraft: growth systems agency, Johannesburg",
+    template: "%s | BuzzCraft",
   },
   description: siteConfig.description,
   applicationName: siteConfig.name,
-  keywords: [
-    "growth systems agency",
-    "Johannesburg marketing agency",
-    "SEO South Africa",
-    "conversion optimisation",
-    "digital growth Gauteng",
-  ],
+  openGraph: {
+    siteName: siteConfig.name,
+    locale: "en_ZA",
+    type: "website",
+    images: [{ url: "/brand/og.png", width: 1200, height: 630, alt: "BuzzCraft" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -45,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-gold focus:px-4 focus:py-3 focus:font-semibold focus:text-ink"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-gold focus:px-4 focus:py-3 focus:font-semibold focus:text-ink"
         >
           Skip to content
         </a>
@@ -58,11 +55,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: serializeJsonLd(professionalServiceJsonLd()) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(webSiteJsonLd()) }}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: serializeJsonLd(webSiteJsonLd()) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(professionalServiceJsonLd()) }}
         />
       </body>
     </html>

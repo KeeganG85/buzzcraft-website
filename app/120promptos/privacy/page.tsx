@@ -24,10 +24,10 @@ export default function PromptPrivacyPage() {
           lists.
         </p>
         <p>
-          On this build, registration is stored in Supabase when the server is configured, and a
-          signed httpOnly cookie lets you reopen the library on this browser. We do not email the
-          prompts to you from this site. Marketing email is only sent if you tick the separate box,
-          and this site does not send that email itself.
+          Registration storage is not connected. The SQL for it is in this repository and has not
+          been applied. Until Keegan approves that migration and the server env vars, the library
+          stays locked. We do not email the prompts from this site. Marketing email is a separate
+          tick, and this site does not send that email itself.
         </p>
         <p>
           You may ask what we hold, correct it, or request deletion, subject to POPIA. Write to

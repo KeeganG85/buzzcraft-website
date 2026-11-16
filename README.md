@@ -34,8 +34,8 @@ Public pages include home, services (websites, search visibility, lead systems),
 
 ## Scorecard and Studio
 
-Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` before a Scorecard request can be stored or a Prompt OS registration can unlock full instructions. The SQL migrations in `supabase/migrations` are documented only. They are not applied by this app.
+The SQL in `supabase/migrations` is in the repo and has not been applied. Do not apply it, and do not set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STUDIO_EMAIL`, `STUDIO_PASSWORD_HASH` or `STUDIO_SESSION_SECRET`, until Keegan approves that after pull request review. Until then the Scorecard opens WhatsApp only, Prompt OS registration stays locked, and Studio cannot store articles.
 
-Studio login also needs `STUDIO_EMAIL`, `STUDIO_PASSWORD_HASH` and `STUDIO_SESSION_SECRET`. Create the hash with `npm run studio:hash -- "password"`.
+`npm run studio:hash` prints a password hash for that later approval. It does not write env vars.
 
 Nothing in this repository deploys the site or changes DNS, Hostinger, the CDN or production data.

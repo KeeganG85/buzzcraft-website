@@ -24,6 +24,10 @@ Only the two supplied files are used as logos, trimmed and exported to WebP and 
 
 Phone `+27 67 952 1325`, email `info@buzzcraft.co.za`, Johannesburg, Gauteng, South Africa. No street address. The registered legal name and Information Officer are not published. See `lib/site-config.ts`.
 
+## Canonical policy
+
+Preferred host: `https://www.buzzcraft.co.za`. Directory routes use a trailing slash, the same shape as the live sitemap. `trailingSlash: true` in `next.config.ts` makes that the only public form. File URLs such as `/sitemap.xml` do not gain a slash.
+
 ## Not in this stage
 
-Canonical host policy, page routes beyond the home shell, forms, Studio and the prompt libraries land in the following pull requests. Nothing here changes DNS, Hostinger, the CDN or production data.
+Page routes beyond the home shell, forms, Studio and the prompt libraries land in the following pull requests. Nothing here changes DNS, Hostinger, the CDN or production data.

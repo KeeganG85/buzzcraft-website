@@ -1,6 +1,14 @@
 import { Mascot } from "@/components/brand/Mascot";
 import { WhatsAppLink } from "@/components/marketing/WhatsAppLink";
 import { Container, buttonClass } from "@/components/ui/primitives";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata({
+  title: "BuzzCraft: growth systems agency, Johannesburg",
+  description:
+    "BuzzCraft builds search-visible, AI-ready websites and lead systems for South African businesses. Based in Johannesburg.",
+  path: "/",
+});
 
 export default function HomePage() {
   return (

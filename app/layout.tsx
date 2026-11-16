@@ -3,6 +3,12 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import {
+  organizationJsonLd,
+  professionalServiceJsonLd,
+  serializeJsonLd,
+  webSiteJsonLd,
+} from "@/lib/jsonld";
 import { siteConfig } from "@/lib/site-config";
 
 const dmSans = localFont({
@@ -15,12 +21,19 @@ const dmSans = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
   title: {
-    default: "BuzzCraft",
+    default: "BuzzCraft: growth systems agency, Johannesburg",
     template: "%s | BuzzCraft",
   },
   description: siteConfig.description,
   applicationName: siteConfig.name,
+  openGraph: {
+    siteName: siteConfig.name,
+    locale: "en_ZA",
+    type: "website",
+    images: [{ url: "/brand/og.png", width: 1200, height: 630, alt: "BuzzCraft" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -36,6 +49,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         <main id="main">{children}</main>
         <Footer />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd()) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(webSiteJsonLd()) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(professionalServiceJsonLd()) }}
+        />
       </body>
     </html>
   );

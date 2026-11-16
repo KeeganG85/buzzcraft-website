@@ -30,3 +30,9 @@ Migration: `migrations/20261116090000_scorecard_requests.sql`
 | created_at | defaults to now |
 
 Row level security is enabled and there is no public policy. Inserts use the service role from `app/api/scorecard/route.ts`.
+
+## prompt_os_registrations
+
+Migration: `migrations/20261116100000_prompt_os_registrations.sql`
+
+Stores the registration that unlocks The 120 Prompt OS. Columns: first name, email (unique), business name, what the business does, privacy consent and timestamp, separate marketing opt-in, and `token_hash` (SHA-256 of the httpOnly cookie). Prompt instructions are not stored in this table. They stay in `content/prompt-os/bodies.server.ts`, which is imported only on the server. If these env vars are missing, registration returns an error and the library stays locked.

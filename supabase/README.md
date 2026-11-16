@@ -36,3 +36,13 @@ Row level security is enabled and there is no public policy. Inserts use the ser
 Migration: `migrations/20261116100000_prompt_os_registrations.sql`
 
 Stores the registration that unlocks The 120 Prompt OS. Columns: first name, email (unique), business name, what the business does, privacy consent and timestamp, separate marketing opt-in, and `token_hash` (SHA-256 of the httpOnly cookie). Prompt instructions are not stored in this table. They stay in `content/prompt-os/bodies.server.ts`, which is imported only on the server. If these env vars are missing, registration returns an error and the library stays locked.
+
+## studio_articles and case_studies
+
+Migration: `migrations/20261116110000_studio.sql`. This file has not been applied.
+
+`studio_articles` holds the private article builder. A row is public only when `status` is `published`. The checklist in `lib/studio.ts` blocks publish when the title, H1, slug, excerpt, author, body, alt text, SEO title, meta description, canonical, source note or claims check is missing. Duplicate slugs are rejected. There is no external writing model.
+
+`case_studies` holds studies added later in Studio. The two approved studies also live in `content/case-studies.ts`.
+
+Studio login uses `STUDIO_EMAIL`, `STUDIO_PASSWORD_HASH` (create it with `npm run studio:hash`) and `STUDIO_SESSION_SECRET`. The session cookie is httpOnly and signed. `/studio` is disallowed in robots and is not in the sitemap.

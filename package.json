@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "studio:hash": "node scripts/hash-studio-password.mjs"
   },
   "dependencies": {
     "gsap": "^3.13.0",

@@ -1,5 +1,5 @@
 /**
- * Insights content collection — typed, statically generated.
+ * Insights drafts. They stay unpublished until a person publishes them in Studio.
  *
  * TODO_VERIFY: replace the generic team byline with a named author, role and
  * short bio before launch. Named authorship materially improves GEO/AEO trust.
@@ -47,12 +47,12 @@ export const insights: Insight[] = [
     authorRole: "Growth Systems Team",
     authorBio:
       "BuzzCraft is a Johannesburg growth systems agency helping South African SMEs connect strategy, visibility and conversion.",
-    coverImage: "/brand/buzz-editorial.webp",
+    coverImage: "/brand/mascot-reading.webp",
     coverImageAlt: "Buzz, the BuzzCraft mascot, in a tailored suit adjusting his glasses",
     category: "Strategy",
     relatedServices: [
-      { label: "Strategy and Growth Direction", href: "/services#strategy" },
-      { label: "The BuzzCraft Sprint", href: "/sprint" },
+      { label: "Services", href: "/services/" },
+      { label: "The BuzzCraft Sprint", href: "/sprint/" },
     ],
     directAnswer:
       "A growth system is the deliberate connection between three things: a clear strategy (who you serve and why you win), visibility (how the right people find you) and conversion (how interest becomes revenue). When these run as one connected engine with shared measurement, marketing stops being a monthly expense and starts compounding. Most SMEs don't lack activity; they lack the connections between activities.",
@@ -98,7 +98,7 @@ export const insights: Insight[] = [
           "The direction-setting work takes days, not months. The BuzzCraft Sprint produces a diagnosis and prioritised roadmap in ten business days. Implementation then happens in phases based on what will move revenue first.",
       },
     ],
-    published: true,
+    published: false,
   },
   {
     slug: "local-seo-johannesburg-guide",
@@ -111,12 +111,12 @@ export const insights: Insight[] = [
     authorRole: "Growth Systems Team",
     authorBio:
       "BuzzCraft is a Johannesburg growth systems agency helping South African SMEs connect strategy, visibility and conversion.",
-    coverImage: "/brand/buzz-editorial.webp",
+    coverImage: "/brand/mascot-reading.webp",
     coverImageAlt: "Buzz, the BuzzCraft mascot, in a tailored suit adjusting his glasses",
     category: "Visibility",
     relatedServices: [
-      { label: "Visibility and Content Systems", href: "/services#visibility" },
-      { label: "Search Visibility Scorecard", href: "/scorecard" },
+      { label: "Search visibility", href: "/services/search-visibility/" },
+      { label: "Search Visibility Scorecard", href: "/scorecard/" },
     ],
     directAnswer:
       "Local SEO for a Johannesburg business rests on four pillars: a complete, accurate Google Business Profile; a website that names your real service areas naturally; a steady flow of genuine customer reviews; and content that answers the exact questions local buyers ask. In 2026, a fifth pillar matters: being clearly understandable to AI assistants, which increasingly answer 'best X near me' questions before a person ever sees a search results page.",
@@ -155,7 +155,7 @@ export const insights: Insight[] = [
           "Profile and website fixes can influence visibility within weeks; competitive positions take months of consistent reviews and content. Anyone promising page-one rankings in days is selling you airtime, not outcomes.",
       },
     ],
-    published: true,
+    published: false,
   },
   {
     slug: "whatsapp-lead-conversion-sme",
@@ -168,12 +168,12 @@ export const insights: Insight[] = [
     authorRole: "Growth Systems Team",
     authorBio:
       "BuzzCraft is a Johannesburg growth systems agency helping South African SMEs connect strategy, visibility and conversion.",
-    coverImage: "/brand/buzz-editorial.webp",
+    coverImage: "/brand/mascot-reading.webp",
     coverImageAlt: "Buzz, the BuzzCraft mascot, in a tailored suit adjusting his glasses",
     category: "Conversion",
     relatedServices: [
-      { label: "Conversion Systems and Automation", href: "/services#conversion" },
-      { label: "The BuzzCraft Sprint", href: "/sprint" },
+      { label: "Lead systems", href: "/services/lead-systems/" },
+      { label: "The BuzzCraft Sprint", href: "/sprint/" },
     ],
     directAnswer:
       "WhatsApp leads go cold for three reasons: slow first response, conversations that make the customer do all the work, and no follow-up when someone goes quiet. The fix is a designed journey: respond within minutes with a message that moves the conversation forward, ask one qualifying question at a time, and follow up twice on a schedule. None of this needs expensive software; it needs a decided process.",
@@ -212,7 +212,7 @@ export const insights: Insight[] = [
           "Yes, if automation handles logistics and humans handle judgement. Automate the instant acknowledgement, the qualifying question and the follow-up nudge. Keep pricing conversations and objection handling human.",
       },
     ],
-    published: true,
+    published: false,
   },
 ];
 

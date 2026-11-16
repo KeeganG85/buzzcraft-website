@@ -22,7 +22,7 @@ Only the two supplied files are used as logos, trimmed and exported to WebP and 
 
 ## Public facts
 
-Phone `+27 67 952 1325`, email `info@buzzcraft.co.za`, Johannesburg, Gauteng, South Africa. No street address. The registered legal name and Information Officer are not published. See `lib/site-config.ts`.
+Phone `+27 67 952 1325`, email `info@buzzcraft.co.za`, Johannesburg, Gauteng, South Africa. No street address. The registered legal name is Buzzcraft (Pty) Ltd. VAT number, company registration number and Information Officer stay as placeholders in `lib/site-config.ts`.
 
 ## Canonical policy
 
@@ -34,8 +34,16 @@ Public pages include home, services (websites, search visibility, lead systems),
 
 ## Scorecard and Studio
 
-The SQL in `supabase/migrations` is in the repo and has not been applied. Do not apply it, and do not set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STUDIO_EMAIL`, `STUDIO_PASSWORD_HASH` or `STUDIO_SESSION_SECRET`, until Keegan approves that after pull request review. Until then the Scorecard opens WhatsApp only, Prompt OS registration stays locked, and Studio cannot store articles.
+The SQL in `supabase/migrations` has been applied to the existing Supabase project `buzzcraft-website`. This repository does not store keys. `SUPABASE_URL` and `STUDIO_SESSION_SECRET` are set on the Vercel project `buzzcraft-website` for Preview and Production only. `SUPABASE_SERVICE_ROLE_KEY` is still unset, because that value is not available from the project tools used here. Until Keegan sets it on Preview and Production, the Scorecard opens WhatsApp only, Prompt OS registration stays locked, and Studio cannot store articles. Do not prefix that key with `NEXT_PUBLIC_`.
 
-`npm run studio:hash` prints a password hash for that later approval. It does not write env vars.
+Do not set `STUDIO_EMAIL` or `STUDIO_PASSWORD_HASH` in this repository. Keegan sets both on the Vercel project, Preview and Production, after choosing the Studio login.
 
-Nothing in this repository deploys the site or changes DNS, Hostinger, the CDN or production data.
+Generate the password hash on your own machine. The script prints the hash and does not write it to disk:
+
+```bash
+npm run studio:hash -- "your password"
+```
+
+Copy the printed `scrypt$...` line into `STUDIO_PASSWORD_HASH`. Put the Studio login email in `STUDIO_EMAIL`. Do not commit either value.
+
+Nothing in this repository deploys the site, promotes a deployment, or changes DNS, Hostinger or the CDN.

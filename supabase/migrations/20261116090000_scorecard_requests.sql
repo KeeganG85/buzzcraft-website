@@ -1,6 +1,6 @@
 -- Scorecard requests for BuzzCraft.
--- NOT APPLIED. Do not run this file until Keegan approves it after pull request review.
--- This repository does not create or change a Supabase project and does not set env vars.
+-- Applied to the existing project buzzcraft-website after Keegan approved it.
+-- This file does not set env vars.
 
 create table if not exists public.scorecard_requests (
   id uuid primary key default gen_random_uuid(),

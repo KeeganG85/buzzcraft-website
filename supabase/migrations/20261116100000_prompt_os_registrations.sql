@@ -1,5 +1,5 @@
 -- Registration gate for The 120 Prompt OS.
--- NOT APPLIED. Do not run this file until Keegan approves it after pull request review.
+-- Applied to the existing project buzzcraft-website after Keegan approved it.
 -- Full prompt text is not stored here. It stays in the server module.
 
 create table if not exists public.prompt_os_registrations (

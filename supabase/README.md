@@ -1,15 +1,15 @@
 # Supabase schema
 
-These SQL files are in the repo only. They have not been applied. Do not apply them, and do not set server env vars, until Keegan explicitly approves that after pull request review. This repository does not create or modify a Supabase project.
+These SQL files have been applied to the existing Supabase project `buzzcraft-website` (ref `rchnpuffemxfqlpxrurp`, region eu-central-1). No second project was created. This repository does not store keys.
 
 ## Environment
 
-These names are documented for a later approval. They are not set by this repository. Never expose a service-role key to the browser.
+Never expose a service-role key to the browser, and never commit it.
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_URL` is set on Vercel Preview and Production.
+- `SUPABASE_SERVICE_ROLE_KEY` is still for Keegan to set on those same targets. The tools used here only return publishable keys, so this name was left unset.
 
-When they are missing, the Scorecard form still opens WhatsApp and tells the person the request was not stored.
+When the service-role key is missing, the Scorecard form still opens WhatsApp and tells the person the request was not stored.
 
 ## scorecard_requests
 
@@ -29,7 +29,7 @@ Migration: `migrations/20261116090000_scorecard_requests.sql`
 | status | defaults to `new` |
 | created_at | defaults to now |
 
-Row level security is enabled and there is no public policy. Inserts use the service role from `app/api/scorecard/route.ts`.
+Row level security is enabled. `anon` and `authenticated` have no table grants. A later migration adds a restrictive deny policy (`using (false)`) for those roles. That policy is not a public read or write grant. Inserts use the service role from `app/api/scorecard/route.ts`.
 
 ## prompt_os_registrations
 
@@ -39,10 +39,18 @@ Stores the registration that unlocks The 120 Prompt OS. Columns: first name, ema
 
 ## studio_articles and case_studies
 
-Migration: `migrations/20261116110000_studio.sql`. This file has not been applied.
+Migration: `migrations/20261116110000_studio.sql`. Applied with the other files.
 
 `studio_articles` holds the private article builder. A row is public only when `status` is `published`. The checklist in `lib/studio.ts` blocks publish when the title, H1, slug, excerpt, author, body, alt text, SEO title, meta description, canonical, source note or claims check is missing. Duplicate slugs are rejected. There is no external writing model.
 
 `case_studies` holds studies added later in Studio. The two approved studies also live in `content/case-studies.ts`.
 
-Studio login uses `STUDIO_EMAIL`, `STUDIO_PASSWORD_HASH` (create it with `npm run studio:hash`) and `STUDIO_SESSION_SECRET`. The session cookie is httpOnly and signed. `/studio` is disallowed in robots and is not in the sitemap.
+Studio login uses `STUDIO_EMAIL`, `STUDIO_PASSWORD_HASH` and `STUDIO_SESSION_SECRET`. The session cookie is httpOnly and signed. `/studio` is disallowed in robots and is not in the sitemap.
+
+`STUDIO_SESSION_SECRET` is set on Vercel Preview and Production. Do not set `STUDIO_EMAIL` or `STUDIO_PASSWORD_HASH` from this repository. Keegan generates the hash locally and sets both names himself:
+
+```bash
+npm run studio:hash -- "your password"
+```
+
+The script prints one `scrypt$16384$8$1$...` line and does not write the password or the hash to disk. Paste that line into `STUDIO_PASSWORD_HASH` on Vercel Preview and Production, next to `STUDIO_EMAIL`.

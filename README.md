@@ -28,6 +28,14 @@ Phone `+27 67 952 1325`, email `info@buzzcraft.co.za`, Johannesburg, Gauteng, So
 
 Preferred host: `https://www.buzzcraft.co.za`. Directory routes use a trailing slash, the same shape as the live sitemap. `trailingSlash: true` in `next.config.ts` makes that the only public form. File URLs such as `/sitemap.xml` do not gain a slash.
 
-## Not in this stage
+## Routes
 
-Page routes beyond the home shell, forms, Studio and the prompt libraries land in the following pull requests. Nothing here changes DNS, Hostinger, the CDN or production data.
+Public pages include home, services (websites, search visibility, lead systems), pricing, the Sprint, work, insights, tools, FOUND, the 120 Prompt OS, about, contact, the Scorecard and privacy. `/promptlibrary` returns 301 to `/120promptos`. Studio is private and is not in the sitemap.
+
+## Scorecard and Studio
+
+Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` before a Scorecard request can be stored or a Prompt OS registration can unlock full instructions. The SQL migrations in `supabase/migrations` are documented only. They are not applied by this app.
+
+Studio login also needs `STUDIO_EMAIL`, `STUDIO_PASSWORD_HASH` and `STUDIO_SESSION_SECRET`. Create the hash with `npm run studio:hash -- "password"`.
+
+Nothing in this repository deploys the site or changes DNS, Hostinger, the CDN or production data.

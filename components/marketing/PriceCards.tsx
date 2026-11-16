@@ -54,14 +54,14 @@ function PriceCard({ offer }: { offer: PackageOffer }) {
       <p className="sr-only" aria-live="polite">
         {offer.name}: from {formatZar(amount)} {billingLabel(mode)}
       </p>
-      {mode === "monthly" ? (
+      {mode === "monthly" && offer.annualSaving != null ? (
         <p className="min-h-16 text-sm leading-6 text-mid">
-          {offer.annualSaving == null
-            ? "Annual plan: 2 months free is advertised. The rand saving on this package is awaiting owner confirmation, so it is not calculated here."
-            : `Annual plan: 2 months free, a saving of ${formatZar(offer.annualSaving)}.`}
+          Annual plan: 2 months free, a saving of {formatZar(offer.annualSaving)}.
         </p>
       ) : (
-        <p className="min-h-16 text-sm leading-6 text-mid">Once-off, from the figure above.</p>
+        <p className="min-h-16 text-sm leading-6 text-mid">
+          {mode === "once" ? "Once-off, from the figure above." : ""}
+        </p>
       )}
       <ul className="mt-6 space-y-2 text-sm leading-6 text-soft">
         {offer.includes.map((item) => (

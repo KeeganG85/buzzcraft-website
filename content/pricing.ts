@@ -6,7 +6,7 @@ export type PackageOffer = {
   promise: string;
   onceOff: number;
   monthly: number;
-  /** Rand saving on an annual plan. Null means the owner has not confirmed the figure. */
+  /** Printed annual saving. Null means this package shows no annual saving. */
   annualSaving: number | null;
   includes: string[];
 };

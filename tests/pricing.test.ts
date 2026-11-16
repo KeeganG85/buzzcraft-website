@@ -1,3 +1,4 @@
+import fs from "fs";
 import { describe, expect, it } from "vitest";
 import { packageAmount, packages, sprintOffer } from "@/content/pricing";
 import { formatZar } from "@/lib/money";
@@ -24,5 +25,14 @@ describe("package prices", () => {
     expect(sprintOffer.workingDays).toBe(10);
     expect(formatZar(18500)).toBe("R18,500");
     expect(formatZar(600)).toBe("R600");
+  });
+
+  it("does not print VAT or an Authority annual saving", () => {
+    const home = fs.readFileSync("app/page.tsx", "utf8");
+    const cards = fs.readFileSync("components/marketing/PriceCards.tsx", "utf8");
+    expect(home).not.toContain("VAT");
+    expect(cards).not.toContain("VAT");
+    expect(cards).not.toContain("awaiting owner confirmation");
+    expect(cards).not.toContain("recommended");
   });
 });

@@ -31,7 +31,7 @@ const faqs = [
   },
   {
     question: "What does working with BuzzCraft cost?",
-    answer: `Website packages start from ${formatZar(3000)} once-off or ${formatZar(300)} a month. The Visibility and Lead Recovery Sprint stays available at ${formatZar(sprintOffer.price)}, with a 50% deposit and 10 working days. Prices are from figures. VAT, contract length and cancellation are awaiting owner confirmation.`,
+    answer: `Website packages start from ${formatZar(3000)} once-off or ${formatZar(300)} a month. The Visibility and Lead Recovery Sprint stays available at ${formatZar(sprintOffer.price)}, with a 50% deposit and 10 working days. Prices are from figures.`,
   },
   {
     question: "Do you guarantee rankings or AI citations?",
@@ -167,8 +167,7 @@ export default function HomePage() {
             From prices, side by side with the Sprint.
           </h2>
           <p className="mt-4 max-w-2xl leading-7 text-mid">
-            All package figures are from. VAT, contract length and cancellation are awaiting owner
-            confirmation. No card is marked recommended.
+            All package figures are from. No card is marked recommended.
           </p>
           <div className="mt-12">
             <PriceCards />

@@ -1,7 +1,7 @@
 /**
- * Public case studies Keegan approved.
- * Copy is limited to what those live sites stated on 16 November 2026.
- * No delivery metrics are invented. Studio can add further studies later.
+ * Public case studies Keegan named.
+ * Public copy uses only what those live sites show, with no results, metrics, quotes or numbers.
+ * Studio can add further studies later.
  */
 export type CaseStudy = {
   slug: string;
@@ -22,12 +22,11 @@ export const caseStudies: CaseStudy[] = [
     summary:
       "The public site describes curated, patient-first medical cannabis access from Jabavu, Soweto: a showroom of approved products, a patient-verification path, and The Chronicle.",
     observed: [
-      "The homepage says access is 18+ and that patient verification is required.",
+      "The homepage says patient verification is required.",
       "Product requests are described as a private WhatsApp conversation with the Nativ team.",
       "The Chronicle publishes Soweto-rooted education, including a piece on why Kadebe Street matters to the story.",
     ],
-    sourceNote:
-      "Checked https://www.nativgenetixsoweto.co.za/ on 16 November 2026. The apex hostname did not resolve from this environment. The site HTML did not include a BuzzCraft credit or performance figures.",
+    sourceNote: "Taken from the public website. No results or metrics are stated here.",
   },
   {
     slug: "czapay",
@@ -37,11 +36,10 @@ export const caseStudies: CaseStudy[] = [
     summary:
       "The public site describes CZApay as South Africa's Everyday Pay platform: access to part of an earned salary before payday, framed as control over money already earned.",
     observed: [
-      "The page title is \"CZApay | Your money. When you've earned it.\"",
-      "The description calls it an Everyday Pay platform and says access should be quick, secure and responsible.",
-      "The enquiry form on the site asks for a South African mobile number and consent before a message is sent.",
+      "The site presents the business as an Everyday Pay platform.",
+      "It describes access to earned salary before payday, and greater control over money already earned.",
+      "The enquiry form asks for a South African mobile number and consent before a message is sent.",
     ],
-    sourceNote:
-      "Checked https://www.czapay.com/ on 16 November 2026. The apex https://czapay.com/ did not complete a TLS handshake from this environment. No performance figures were published in the HTML we could read.",
+    sourceNote: "Taken from the public website. No results or metrics are stated here.",
   },
 ];

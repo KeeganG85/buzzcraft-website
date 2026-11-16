@@ -130,9 +130,7 @@ export default function SprintPage() {
           </div>
         </div>
         <p className="mt-10 max-w-3xl leading-7 text-mid">
-          Bespoke projects are taken on selectively from R25,000. That figure is already published on
-          the live Sprint page. The website packages are a separate starting point, and they do not
-          require a Sprint first.{" "}
+          The website packages are a separate starting point, and they do not require a Sprint first.{" "}
           <Link href="/pricing/" className="text-gold">
             See the packages
           </Link>

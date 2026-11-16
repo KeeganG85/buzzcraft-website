@@ -27,12 +27,6 @@ export default function PricingPage() {
       <div className="mt-12">
         <PriceCards />
       </div>
-      <p className="mt-8 max-w-3xl text-sm leading-6 text-mid">
-        Owner review: VAT, contract length and cancellation terms are not confirmed, so they are not
-        written as policy. The annual rand saving on Authority + Automation (R1,200 a month) is also
-        unconfirmed and is not calculated on this page. Starter shows a R600 annual saving and Growth
-        shows R1,300, which Keegan approved printing. No package is marked recommended.
-      </p>
 
       <article className="mt-16 grid gap-8 border border-white/10 bg-surface p-6 md:grid-cols-[1.4fr_0.8fr] md:p-10">
         <div>
@@ -63,12 +57,6 @@ export default function PricingPage() {
           </WhatsAppLink>
         </div>
       </article>
-
-      <p className="mt-8 max-w-3xl text-sm leading-6 text-mid">
-        The live Sprint page also says bespoke projects are taken on selectively from R25,000. That
-        figure is repeated on the Sprint page because it is already public. It is not a fourth
-        package.
-      </p>
     </Container>
   );
 }

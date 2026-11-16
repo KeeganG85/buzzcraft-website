@@ -38,5 +38,16 @@ describe("package prices", () => {
     expect(home).not.toMatch(/VAT number[:\s]*\d/);
     expect(cards).not.toContain("awaiting owner confirmation");
     expect(cards).not.toContain("recommended");
+    const pricing = fs.readFileSync("app/pricing/page.tsx", "utf8");
+    const sprintPage = fs.readFileSync("app/sprint/page.tsx", "utf8");
+    const sprintCopy = fs.readFileSync("content/sprint.ts", "utf8");
+    for (const text of [pricing, sprintPage, sprintCopy]) {
+      expect(text).not.toContain("R25,000");
+      expect(text).not.toContain("VAT");
+      expect(text).not.toContain("contract length");
+      expect(text).not.toContain("cancellation");
+    }
+    expect(pricing).toContain("R18,500");
+    expect(sprintPage).toContain("R18,500");
   });
 });

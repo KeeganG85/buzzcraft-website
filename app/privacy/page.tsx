@@ -53,11 +53,10 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-xl font-semibold text-soft">Where a Scorecard request is stored</h2>
           <p className="mt-3">
-            Sending the form does two things: it opens WhatsApp with your details, and, when the
-            server is configured with Supabase credentials, it stores the same request in a
-            scorecard_requests table. Supabase acts as an operator for that storage. The service-role
-            key stays on the server. If storage is not configured, the form says so and WhatsApp is
-            still available. We do not create or alter the production project from this repository.
+            Sending the form opens WhatsApp with your details. A database copy is not stored yet.
+            The SQL for a future scorecard_requests table is in this repository and has not been
+            applied. Storage stays off until Keegan approves that migration and the server env vars
+            after pull request review. This site does not create or change a Supabase project.
           </p>
         </section>
         <section>

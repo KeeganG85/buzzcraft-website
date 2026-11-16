@@ -1,7 +1,6 @@
 -- Scorecard requests for BuzzCraft.
--- Apply this in the Supabase project Keegan chooses. Do not run it against
--- production from this repository's build, and do not create that project here.
--- The app inserts with the service-role key from the server only.
+-- NOT APPLIED. Do not run this file until Keegan approves it after pull request review.
+-- This repository does not create or change a Supabase project and does not set env vars.
 
 create table if not exists public.scorecard_requests (
   id uuid primary key default gen_random_uuid(),

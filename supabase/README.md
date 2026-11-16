@@ -1,10 +1,10 @@
 # Supabase schema
 
-This folder documents the database the site expects. Applying it is a manual step in a Supabase project Keegan controls. This repository does not create or modify the production project.
+These SQL files are in the repo only. They have not been applied. Do not apply them, and do not set server env vars, until Keegan explicitly approves that after pull request review. This repository does not create or modify a Supabase project.
 
 ## Environment
 
-Set these on the server only. Never expose the service-role key to the browser.
+These names are documented for a later approval. They are not set by this repository. Never expose a service-role key to the browser.
 
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`

@@ -130,7 +130,7 @@ export function ScorecardForm() {
       </button>
       <p className="text-sm leading-6 text-mid">
         Free means free. No card details, no obligation, no automated upsell sequence. Submitting
-        saves the request and opens WhatsApp with your details ready to send.
+        opens WhatsApp with your details ready to send. A database copy is not stored yet.
       </p>
     </form>
   );

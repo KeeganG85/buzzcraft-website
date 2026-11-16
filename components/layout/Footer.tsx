@@ -10,7 +10,8 @@ export function Footer() {
       <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-14 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <Wordmark height={34} />
-          <p className="mt-4 max-w-sm text-sm leading-6 text-mid">{siteConfig.tagline}</p>
+          <p className="mt-4 text-sm font-semibold text-soft">{siteConfig.legalEntity.registeredName}</p>
+          <p className="mt-2 max-w-sm text-sm leading-6 text-mid">{siteConfig.tagline}</p>
           <p className="mt-3 max-w-sm text-sm leading-6 text-mid">
             A growth systems agency for ambitious South African businesses, based in {siteConfig.city},{" "}
             {siteConfig.region}.
@@ -68,7 +69,11 @@ export function Footer() {
       </div>
       <div className="border-t border-white/10">
         <p className="mx-auto w-full max-w-6xl px-5 py-4 text-xs text-mid">
-          © {new Date().getFullYear()} BuzzCraft. All rights reserved.
+          © {new Date().getFullYear()} {siteConfig.legalEntity.registeredName}. All rights reserved.
+          {" "}
+          VAT number: {siteConfig.legalEntity.vatNumber ?? "[owner input]"}. Company registration
+          number: {siteConfig.legalEntity.registrationNumber ?? "[owner input]"}. Information
+          Officer: {siteConfig.legalEntity.informationOfficer ?? "[owner input]"}.
         </p>
       </div>
     </footer>

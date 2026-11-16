@@ -22,7 +22,13 @@ describe("canonical policy", () => {
   });
 
   it("keeps drafts, studio and the legacy prompt library out of the sitemap list", () => {
-    expect(indexablePaths).toEqual(["/"]);
+    expect(indexablePaths).toEqual([
+      "/",
+      "/services",
+      "/services/websites",
+      "/services/search-visibility",
+      "/services/lead-systems",
+    ]);
     expect(blockedPaths).toContain("/promptlibrary/");
     expect(blockedPaths).toContain("/studio/");
     expect(indexablePaths.join(" ")).not.toContain("promptlibrary");
@@ -37,6 +43,7 @@ describe("structured data", () => {
       webSiteJsonLd(),
       professionalServiceJsonLd(),
     ]);
+    expect(graph).toContain("Buzzcraft (Pty) Ltd");
     expect(graph).toContain("Keegan Goocin");
     expect(graph).toContain("Mokhachane Taoana");
     expect(graph).toContain("+27679521325");

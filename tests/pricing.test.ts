@@ -1,6 +1,7 @@
 import fs from "fs";
 import { describe, expect, it } from "vitest";
 import { packageAmount, packages, sprintOffer } from "@/content/pricing";
+import { sprint } from "@/content/sprint";
 import { formatZar } from "@/lib/money";
 
 describe("package prices", () => {
@@ -25,6 +26,8 @@ describe("package prices", () => {
     expect(sprintOffer.workingDays).toBe(10);
     expect(formatZar(18500)).toBe("R18,500");
     expect(formatZar(600)).toBe("R600");
+    expect(sprint.deliverables).toHaveLength(6);
+    expect(sprint.deposit).toBe("50% deposit to book");
   });
 
   it("marks package prices excl. VAT and does not invent a VAT number", () => {
@@ -35,5 +38,17 @@ describe("package prices", () => {
     expect(home).not.toMatch(/VAT number[:\s]*\d/);
     expect(cards).not.toContain("awaiting owner confirmation");
     expect(cards).not.toContain("recommended");
+    const pricing = fs.readFileSync("app/pricing/page.tsx", "utf8");
+    const sprintPage = fs.readFileSync("app/sprint/page.tsx", "utf8");
+    const sprintCopy = fs.readFileSync("content/sprint.ts", "utf8");
+    for (const text of [pricing, sprintPage, sprintCopy]) {
+      expect(text).not.toContain("R25,000");
+      expect(text).toContain("excl. VAT");
+      expect(text).not.toMatch(/VAT number[:\s]*\d/);
+      expect(text).not.toContain("contract length");
+      expect(text).not.toContain("cancellation");
+    }
+    expect(pricing).toContain("R18,500");
+    expect(sprintPage).toContain("R18,500");
   });
 });

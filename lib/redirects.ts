@@ -15,4 +15,11 @@ export const legacyRedirects: RedirectRule[] = [
   { source: "/blog", destination: "/insights", permanent: true },
   { source: "/blog/:slug", destination: "/insights/:slug", permanent: true },
   { source: "/portfolio", destination: "/work", permanent: true },
+  /**
+   * The legacy page is titled BuzzCraft Prompt OS and the live tools link
+   * used that name. FOUND is a different open library, so /promptlibrary
+   * goes to the 120 Prompt OS product page, not to /found or the tools hub.
+   */
+  { source: "/promptlibrary", destination: "/120promptos", permanent: true },
+  { source: "/promptlibrary/:path*", destination: "/120promptos", permanent: true },
 ];

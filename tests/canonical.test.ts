@@ -19,6 +19,9 @@ describe("canonical policy", () => {
     expect(sources).toContain("/blog/:slug");
     expect(sources).not.toContain("/about");
     expect(sources).not.toContain("/contact");
+    const promptLibrary = legacyRedirects.find((rule) => rule.source === "/promptlibrary");
+    expect(promptLibrary?.destination).toBe("/120promptos");
+    expect(promptLibrary?.permanent).toBe(true);
   });
 
   it("keeps drafts, studio and the legacy prompt library out of the sitemap list", () => {
@@ -33,6 +36,14 @@ describe("canonical policy", () => {
       "/contact",
       "/scorecard",
       "/privacy",
+      "/tools",
+      "/found",
+      "/120promptos",
+      "/120promptos/library",
+      "/120promptos/privacy",
+      "/120promptos/popia",
+      "/120promptos/terms",
+      "/120promptos/contact",
     ]);
     expect(blockedPaths).toContain("/promptlibrary/");
     expect(blockedPaths).toContain("/studio/");

@@ -10,6 +10,14 @@ export const indexablePaths = [
   "/contact",
   "/scorecard",
   "/privacy",
+  "/tools",
+  "/found",
+  "/120promptos",
+  "/120promptos/library",
+  "/120promptos/privacy",
+  "/120promptos/popia",
+  "/120promptos/terms",
+  "/120promptos/contact",
 ] as const;
 
 export const blockedPaths = ["/studio/", "/api/", "/scorecard/thank-you/", "/promptlibrary/"] as const;

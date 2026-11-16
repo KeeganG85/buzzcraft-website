@@ -35,7 +35,7 @@ export const siteConfig = {
 
   founders: [
     { name: "Keegan Goocin", role: "Co-founder" },
-    { name: "Mokhachane Taoana", role: "Co-founding partner" },
+    { name: "Mokhachane Taoana", role: "Co-founder" },
   ],
 
   /**

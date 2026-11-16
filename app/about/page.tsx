@@ -29,12 +29,17 @@ export default function AboutPage() {
         <div className="max-w-2xl space-y-4 leading-7 text-mid">
           <h2 className="text-2xl font-semibold text-soft">Where we come from</h2>
           <p>
-            BuzzCraft was co-founded in Johannesburg by Keegan Goocin, whose background is in growth
-            and performance marketing: the side of the industry where every rand is tracked.
+            <a href="https://za.linkedin.com/in/keegan-goocin-monk" className="text-gold">
+              Keegan Goocin
+            </a>{" "}
+            is a Johannesburg-based digital growth specialist with 12+ years&apos; commercial
+            experience, helping businesses grow through Google, local and AI-search visibility,
+            websites and WhatsApp automation.
           </p>
-          <p>
-            Mokhachane Taoana is co-founding partner. A fuller public bio for Mokhachane is waiting
-            on the owners. Nothing further is published here.
+          <p>Mokhachane Taoana, co-founder.</p>
+          <p className="border border-gold/40 bg-surface p-4 text-sm">
+            Owner input: a bio and a profile link for Mokhachane Taoana stay unpublished until a
+            direct profile URL is supplied.
           </p>
           <p>
             That shapes the work. A website is a system with a job: get found by the right people,
@@ -67,8 +72,9 @@ export default function AboutPage() {
         <li>We will tell you when you do not need us. Some businesses only need a profile fix and a WhatsApp button.</li>
       </ul>
 
-      <p className="mt-10 max-w-2xl text-sm leading-6 text-mid">
-        Registered legal name: not published. The public name is BuzzCraft, based in Johannesburg.
+      <p className="mt-10 max-w-2xl border border-gold/40 bg-surface p-4 text-sm leading-6">
+        Owner input still required: the registered legal name and the Information Officer are
+        unknown. They are not invented here. The public name is BuzzCraft, based in Johannesburg.
         There is no street address on this site.
       </p>
       <WhatsAppLink className={`${buttonClass("primary")} mt-8`}>WhatsApp BuzzCraft</WhatsAppLink>

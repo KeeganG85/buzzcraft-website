@@ -36,10 +36,15 @@ export default function AboutPage() {
             experience, helping businesses grow through Google, local and AI-search visibility,
             websites and WhatsApp automation.
           </p>
-          <p>Mokhachane Taoana, co-founder.</p>
+          <p>
+            <a href="https://www.linkedin.com/in/motaoana" className="text-gold">
+              Mokhachane Taoana
+            </a>
+            , co-founder.
+          </p>
           <p className="border border-gold/40 bg-surface p-4 text-sm">
-            Owner input: a bio and a profile link for Mokhachane Taoana stay unpublished until a
-            direct profile URL is supplied.
+            Owner input: a bio for Mokhachane Taoana. The public LinkedIn profile could not be read
+            from here, so no biography is invented.
           </p>
           <p>
             That shapes the work. A website is a system with a job: get found by the right people,

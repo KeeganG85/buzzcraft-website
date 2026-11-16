@@ -36,15 +36,19 @@ export default function AboutPage() {
             experience, helping businesses grow through Google, local and AI-search visibility,
             websites and WhatsApp automation.
           </p>
-          <p>
+          <h3 className="text-xl font-semibold text-soft">
             <a href="https://www.linkedin.com/in/motaoana" className="text-gold">
-              Mokhachane Taoana
+              Mokhachane (Mo) Taoana
             </a>
-            , co-founder.
-          </p>
-          <p className="border border-gold/40 bg-surface p-4 text-sm">
-            Owner input: a bio for Mokhachane Taoana. The public LinkedIn profile could not be read
-            from here, so no biography is invented.
+            , Co-Founder
+          </h3>
+          <p>
+            Mokhachane (Mo) Taoana is co-founder of BuzzCraft. He helps business owners turn
+            disconnected marketing into one connected system, optimising workflows and digital
+            presence so the right customers can find, trust and choose them. At BuzzCraft, Mo
+            focuses on the practical side of growth: clear visibility, clean lead journeys and
+            automation that stops enquiries leaking, so owners spend less time chasing admin and
+            more time doing the work.
           </p>
           <p>
             That shapes the work. A website is a system with a job: get found by the right people,

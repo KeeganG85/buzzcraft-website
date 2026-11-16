@@ -12,4 +12,7 @@ export const footerExplore: NavItem[] = [
   { href: "/services/websites/", label: "Websites" },
   { href: "/services/search-visibility/", label: "Search visibility" },
   { href: "/services/lead-systems/", label: "Lead systems" },
+  { href: "/scorecard/", label: "Scorecard" },
+  { href: "/contact/", label: "Contact" },
+  { href: "/privacy/", label: "Privacy" },
 ];

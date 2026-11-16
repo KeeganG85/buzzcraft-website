@@ -28,13 +28,19 @@ export default function AboutPage() {
       <div className="mt-12 grid items-center gap-10 md:grid-cols-[1fr_18rem]">
         <div className="max-w-2xl space-y-4 leading-7 text-mid">
           <h2 className="text-2xl font-semibold text-soft">Where we come from</h2>
-          <p>
+          <h3 className="text-xl font-semibold text-soft">
             <a href="https://za.linkedin.com/in/keegan-goocin-monk" className="text-gold">
               Keegan Goocin
-            </a>{" "}
-            is a Johannesburg-based digital growth specialist with 12+ years&apos; commercial
-            experience, helping businesses grow through Google, local and AI-search visibility,
-            websites and WhatsApp automation.
+            </a>
+            , Co-Founder
+          </h3>
+          <p>
+            Keegan Goocin is co-founder of BuzzCraft. He helps South African businesses get found
+            by the right customers on Google, in local search and in AI search, turning visibility
+            into enquiries that actually convert. At BuzzCraft, Keegan focuses on the front end of
+            growth: search visibility, conversion-led websites and WhatsApp follow-up that keeps
+            every lead moving, so owners spend less time chasing enquiries and more time winning
+            work.
           </p>
           <h3 className="text-xl font-semibold text-soft">
             <a href="https://www.linkedin.com/in/motaoana" className="text-gold">

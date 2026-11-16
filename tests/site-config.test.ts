@@ -10,8 +10,10 @@ describe("public facts", () => {
     expect(siteConfig.url).toBe("https://www.buzzcraft.co.za");
   });
 
-  it("does not invent a registered legal name", () => {
-    expect(siteConfig.legalEntity.registeredName).toBeNull();
+  it("uses the confirmed legal name and leaves the unknown numbers blank", () => {
+    expect(siteConfig.legalEntity.registeredName).toBe("Buzzcraft (Pty) Ltd");
+    expect(siteConfig.legalEntity.vatRegistered).toBe(true);
+    expect(siteConfig.legalEntity.vatNumber).toBeNull();
     expect(siteConfig.legalEntity.registrationNumber).toBeNull();
     expect(siteConfig.legalEntity.informationOfficer).toBeNull();
   });

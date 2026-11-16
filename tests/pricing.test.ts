@@ -27,11 +27,12 @@ describe("package prices", () => {
     expect(formatZar(600)).toBe("R600");
   });
 
-  it("does not print VAT or an Authority annual saving", () => {
+  it("marks package prices excl. VAT and does not invent a VAT number", () => {
     const home = fs.readFileSync("app/page.tsx", "utf8");
     const cards = fs.readFileSync("components/marketing/PriceCards.tsx", "utf8");
-    expect(home).not.toContain("VAT");
-    expect(cards).not.toContain("VAT");
+    expect(home).toContain("excl. VAT");
+    expect(cards).toContain("excl. VAT");
+    expect(home).not.toMatch(/VAT number[:\s]*\d/);
     expect(cards).not.toContain("awaiting owner confirmation");
     expect(cards).not.toContain("recommended");
   });

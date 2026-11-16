@@ -49,10 +49,12 @@ function PriceCard({ offer }: { offer: PackageOffer }) {
       </fieldset>
       <p className="tnum mt-6 min-h-24 text-4xl font-semibold tracking-tight">
         From {formatZar(amount)}
-        <span className="mt-1 block text-base font-normal text-mid">{billingLabel(mode)}</span>
+        <span className="mt-1 block text-base font-normal text-mid">
+          {billingLabel(mode)}, excl. VAT
+        </span>
       </p>
       <p className="sr-only" aria-live="polite">
-        {offer.name}: from {formatZar(amount)} {billingLabel(mode)}
+        {offer.name}: from {formatZar(amount)} {billingLabel(mode)}, excl. VAT
       </p>
       {mode === "monthly" && offer.annualSaving != null ? (
         <p className="min-h-16 text-sm leading-6 text-mid">

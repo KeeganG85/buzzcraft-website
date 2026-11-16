@@ -31,7 +31,7 @@ const faqs = [
   },
   {
     question: "What does working with BuzzCraft cost?",
-    answer: `Website packages start from ${formatZar(3000)} once-off or ${formatZar(300)} a month. The Visibility and Lead Recovery Sprint stays available at ${formatZar(sprintOffer.price)}, with a 50% deposit and 10 working days. Prices are from figures.`,
+    answer: `Website packages start from ${formatZar(3000)} once-off or ${formatZar(300)} a month, excl. VAT. The Visibility and Lead Recovery Sprint stays available at ${formatZar(sprintOffer.price)} excl. VAT, with a 50% deposit and 10 working days. Prices are from figures.`,
   },
   {
     question: "Do you guarantee rankings or AI citations?",
@@ -108,18 +108,29 @@ export default function HomePage() {
         <Container>
           <p className="eyebrow">Proof</p>
           <h2 id="proof-title" className="mt-4 max-w-2xl text-3xl font-semibold tracking-tight md:text-5xl">
-            Two businesses you can open yourself.
+            Real clients. Real systems. Real names.
           </h2>
           <p className="mt-4 max-w-2xl leading-7 text-mid">
-            No invented percentages. These notes say only what the public sites stated when we read
-            them. A fuller write-up can be added in Studio when Keegan wants it published.
+            Every case study below is a real business you can look up. We describe what we found,
+            what we built and what changed, in plain language. Where a result can&apos;t be honestly
+            measured yet, we say so instead of inventing a percentage.
           </p>
           <div className="mt-12 grid gap-12 md:grid-cols-2">
             {caseStudies.map((study) => (
               <article key={study.slug}>
-                <p className="text-sm text-mid">{study.location}</p>
+                <p className="text-sm text-mid">
+                  {study.category} · {study.location}
+                </p>
                 <h3 className="mt-2 text-2xl font-semibold">{study.name}</h3>
-                <p className="mt-3 leading-7 text-mid">{study.summary}</p>
+                {study.label ? <p className="mt-1 text-sm text-mid">{study.label}</p> : null}
+                <p className="mt-3 leading-7 text-mid">{study.situation}</p>
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-sm leading-6 text-mid">
+                  {study.built.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+                <p className="mt-3 leading-7 text-mid">{study.changed}</p>
+                <p className="mt-2 text-sm text-mid">Pillar: {study.pillar}</p>
                 <a href={study.href} className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-gold">
                   Visit the live site
                 </a>
@@ -173,7 +184,7 @@ export default function HomePage() {
             <PriceCards />
           </div>
           <p className="mt-10 max-w-2xl leading-7 text-mid">
-            The {sprintOffer.name} remains a separate offer at {formatZar(sprintOffer.price)},{" "}
+            The {sprintOffer.name} remains a separate offer at {formatZar(sprintOffer.price)} excl. VAT,{" "}
             {sprintOffer.deposit.toLowerCase()}, over {sprintOffer.workingDays} working days.
           </p>
         </Container>

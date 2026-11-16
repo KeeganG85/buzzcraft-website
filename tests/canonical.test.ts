@@ -43,6 +43,7 @@ describe("structured data", () => {
       webSiteJsonLd(),
       professionalServiceJsonLd(),
     ]);
+    expect(graph).toContain("Buzzcraft (Pty) Ltd");
     expect(graph).toContain("Keegan Goocin");
     expect(graph).toContain("Mokhachane Taoana");
     expect(graph).toContain("+27679521325");

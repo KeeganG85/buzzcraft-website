@@ -1,7 +1,7 @@
 /**
  * Public facts confirmed for this rebuild.
- * The registered legal name, registration number and Information Officer
- * are not published on the live site. Do not invent them.
+ * Legal name is confirmed. VAT number, company registration number and
+ * Information Officer are still owner input. Do not invent them.
  */
 
 export const siteConfig = {
@@ -22,14 +22,14 @@ export const siteConfig = {
   country: "South Africa",
   countryCode: "ZA",
 
-  /**
-   * Owner input still required. The live privacy policy names "BuzzCraft"
-   * and Johannesburg only. No company type or registration number is published.
-   */
   legalEntity: {
-    publishedName: "BuzzCraft",
-    registeredName: null as string | null,
+    registeredName: "Buzzcraft (Pty) Ltd",
+    vatRegistered: true,
+    /** Owner input. Do not invent. */
+    vatNumber: null as string | null,
+    /** Owner input. Do not invent. */
     registrationNumber: null as string | null,
+    /** Owner input. Do not invent. */
     informationOfficer: null as string | null,
   },
 

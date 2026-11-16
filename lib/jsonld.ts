@@ -10,6 +10,7 @@ export function organizationJsonLd() {
     "@type": "Organization",
     "@id": organizationId,
     name: siteConfig.name,
+    legalName: siteConfig.legalEntity.registeredName,
     url: siteConfig.url,
     logo: `${siteConfig.url}/brand/roundel.png`,
     image: `${siteConfig.url}/brand/og.png`,

@@ -17,17 +17,20 @@ export default function PrivacyPage() {
       <div className="mt-8 max-w-3xl border border-gold/40 bg-surface p-5 text-sm leading-6">
         <p className="font-semibold text-gold">Owner input still required</p>
         <p className="mt-2 text-mid">
-          The live site publishes the name BuzzCraft and a Johannesburg base. It does not publish a
-          registered legal name, a registration number, or an Information Officer. Those fields stay
-          blank here until the owner supplies them. Privacy requests go to {siteConfig.email}.
+          The legal name is {siteConfig.legalEntity.registeredName}, which is SA VAT registered.
+          VAT number: {siteConfig.legalEntity.vatNumber ?? "[owner input]"}. Company registration
+          number: {siteConfig.legalEntity.registrationNumber ?? "[owner input]"}. Information
+          Officer: {siteConfig.legalEntity.informationOfficer ?? "[owner input]"}. Privacy requests
+          go to {siteConfig.email}.
         </p>
       </div>
       <div className="mt-10 max-w-3xl space-y-8 leading-7 text-mid">
         <section>
           <h2 className="text-xl font-semibold text-soft">Who this describes</h2>
           <p className="mt-3">
-            This policy explains how BuzzCraft, based in Johannesburg, South Africa, handles personal
-            information under the Protection of Personal Information Act (POPIA).
+            This policy explains how {siteConfig.legalEntity.registeredName}, based in Johannesburg,
+            South Africa, handles personal information under the Protection of Personal Information
+            Act (POPIA).
           </p>
         </section>
         <section>

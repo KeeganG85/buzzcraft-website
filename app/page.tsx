@@ -131,9 +131,14 @@ export default function HomePage() {
                 </ul>
                 <p className="mt-3 leading-7 text-mid">{study.changed}</p>
                 <p className="mt-2 text-sm text-mid">Pillar: {study.pillar}</p>
-                <a href={study.href} className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-gold">
-                  Visit the live site
-                </a>
+                <p className="mt-4 flex flex-wrap gap-4">
+                  <Link href={`/work/${study.slug}/`} className="inline-flex min-h-11 items-center text-sm font-semibold text-gold">
+                    Read the note
+                  </Link>
+                  <a href={study.href} className="inline-flex min-h-11 items-center text-sm font-semibold text-gold">
+                    Visit the live site
+                  </a>
+                </p>
               </article>
             ))}
           </div>

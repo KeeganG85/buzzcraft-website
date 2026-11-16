@@ -45,6 +45,10 @@ describe("canonical policy", () => {
       "/120promptos/terms",
       "/120promptos/contact",
       "/insights",
+      "/about",
+      "/work",
+      "/work/nativ-genetix-soweto",
+      "/work/czapay",
     ]);
     expect(blockedPaths).toContain("/promptlibrary/");
     expect(blockedPaths).toContain("/studio/");

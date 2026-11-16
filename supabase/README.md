@@ -39,7 +39,7 @@ Stores the registration that unlocks The 120 Prompt OS. Columns: first name, ema
 
 ## studio_articles and case_studies
 
-Migration: `migrations/20261116110000_studio.sql`
+Migration: `migrations/20261116110000_studio.sql`. This file has not been applied.
 
 `studio_articles` holds the private article builder. A row is public only when `status` is `published`. The checklist in `lib/studio.ts` blocks publish when the title, H1, slug, excerpt, author, body, alt text, SEO title, meta description, canonical, source note or claims check is missing. Duplicate slugs are rejected. There is no external writing model.
 

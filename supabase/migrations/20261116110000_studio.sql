@@ -1,5 +1,6 @@
 -- Private Studio: articles and extra case studies.
--- Apply manually. Human publish only. No public policies.
+-- NOT APPLIED. Do not run this file until Keegan approves it after pull request review.
+-- Human publish only. No public policies.
 
 create table if not exists public.studio_articles (
   id uuid primary key default gen_random_uuid(),

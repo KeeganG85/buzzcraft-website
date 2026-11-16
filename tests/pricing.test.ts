@@ -1,6 +1,7 @@
 import fs from "fs";
 import { describe, expect, it } from "vitest";
 import { packageAmount, packages, sprintOffer } from "@/content/pricing";
+import { sprint } from "@/content/sprint";
 import { formatZar } from "@/lib/money";
 
 describe("package prices", () => {
@@ -25,6 +26,8 @@ describe("package prices", () => {
     expect(sprintOffer.workingDays).toBe(10);
     expect(formatZar(18500)).toBe("R18,500");
     expect(formatZar(600)).toBe("R600");
+    expect(sprint.deliverables).toHaveLength(6);
+    expect(sprint.deposit).toBe("50% deposit to book");
   });
 
   it("marks package prices excl. VAT and does not invent a VAT number", () => {

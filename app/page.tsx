@@ -185,7 +185,11 @@ export default function HomePage() {
           </div>
           <p className="mt-10 max-w-2xl leading-7 text-mid">
             The {sprintOffer.name} remains a separate offer at {formatZar(sprintOffer.price)} excl. VAT,{" "}
-            {sprintOffer.deposit.toLowerCase()}, over {sprintOffer.workingDays} working days.
+            {sprintOffer.deposit.toLowerCase()}, over {sprintOffer.workingDays} working days.{" "}
+            <Link href="/pricing/" className="text-gold">
+              Compare them on the pricing page
+            </Link>
+            .
           </p>
         </Container>
       </section>

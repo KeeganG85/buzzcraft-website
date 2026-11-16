@@ -5,6 +5,8 @@ export const indexablePaths = [
   "/services/websites",
   "/services/search-visibility",
   "/services/lead-systems",
+  "/pricing",
+  "/sprint",
 ] as const;
 
 export const blockedPaths = ["/studio/", "/api/", "/scorecard/thank-you/", "/promptlibrary/"] as const;

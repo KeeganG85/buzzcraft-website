@@ -44,6 +44,7 @@ describe("canonical policy", () => {
       "/120promptos/popia",
       "/120promptos/terms",
       "/120promptos/contact",
+      "/insights",
     ]);
     expect(blockedPaths).toContain("/promptlibrary/");
     expect(blockedPaths).toContain("/studio/");

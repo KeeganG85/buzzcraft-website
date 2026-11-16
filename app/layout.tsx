@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { MotionRoot } from "@/components/motion/MotionRoot";
 import {
   organizationJsonLd,
   professionalServiceJsonLd,
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
         <Header />
+        <MotionRoot />
         <main id="main">{children}</main>
         <Footer />
         <script

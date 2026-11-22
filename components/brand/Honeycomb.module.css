@@ -1,0 +1,62 @@
+/*
+  Tile is one hex period. Each shared wall sits on the tile edge, so the two
+  clipped halves meet at a single stroke. Variables are read by the inline SVG.
+*/
+.root {
+  --honeycomb-stroke: var(--color-gold);
+  --honeycomb-stroke-opacity: 0.17;
+  --honeycomb-stroke-width: 1px;
+  --honeycomb-scale: 1;
+  --honeycomb-glow: 0;
+
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+
+.pattern {
+  transform: scale(var(--honeycomb-scale));
+  transform-origin: 0 0;
+}
+
+.stroke {
+  fill: none;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+  stroke-opacity: var(--honeycomb-stroke-opacity);
+  stroke-width: calc(var(--honeycomb-stroke-width) / var(--honeycomb-scale));
+}
+
+.sheenHi {
+  stop-color: var(--honeycomb-stroke);
+  stop-opacity: 1;
+}
+
+.sheenLo {
+  stop-color: var(--honeycomb-stroke);
+  stop-opacity: 0.62;
+}
+
+.glow {
+  opacity: var(--honeycomb-glow);
+}
+
+.glowFlood {
+  flood-color: var(--honeycomb-stroke);
+  flood-opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow {
+    display: none;
+  }
+}

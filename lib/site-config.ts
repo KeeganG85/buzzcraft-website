@@ -1,7 +1,7 @@
 /**
  * Public facts confirmed for this rebuild.
- * Legal name is confirmed. VAT number, company registration number and
- * Information Officer are still owner input. Do not invent them.
+ * Legal name and company registration number are confirmed.
+ * VAT number and Information Officer are still owner input. Do not invent them.
  */
 
 export const siteConfig = {
@@ -27,8 +27,7 @@ export const siteConfig = {
     vatRegistered: true,
     /** Owner input. Do not invent. */
     vatNumber: null as string | null,
-    /** Owner input. Do not invent. */
-    registrationNumber: null as string | null,
+    registrationNumber: "2025/576404/07",
     /** Owner input. Do not invent. */
     informationOfficer: null as string | null,
   },

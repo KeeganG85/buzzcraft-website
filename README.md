@@ -22,7 +22,7 @@ Only the two supplied files are used as logos, trimmed and exported to WebP and 
 
 ## Public facts
 
-Phone `+27 67 952 1325`, email `info@buzzcraft.co.za`, Johannesburg, Gauteng, South Africa. No street address. The registered legal name is Buzzcraft (Pty) Ltd. VAT number, company registration number and Information Officer stay as placeholders in `lib/site-config.ts`.
+Phone `+27 67 952 1325`, email `info@buzzcraft.co.za`, Johannesburg, Gauteng, South Africa. No street address. The registered legal name is Buzzcraft (Pty) Ltd, registration number 2025/576404/07. VAT number and Information Officer stay as placeholders in `lib/site-config.ts`.
 
 ## Canonical policy
 

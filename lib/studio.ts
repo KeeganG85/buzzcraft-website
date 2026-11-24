@@ -3,6 +3,19 @@ import { cookies } from "next/headers";
 
 const COOKIE = "studio_session";
 
+export const articleStatuses = [
+  "draft",
+  "in_review",
+  "approved",
+  "scheduled",
+  "published",
+  "archived",
+] as const;
+
+export type ArticleStatus = (typeof articleStatuses)[number];
+
+export const studioRobots = { index: false, follow: false } as const;
+
 export type ArticleRecord = {
   id: string;
   slug: string;
@@ -24,8 +37,97 @@ export type ArticleRecord = {
   focus_phrase: string;
   source_note: string;
   claims_checked: boolean;
-  status: "draft" | "published";
+  status: ArticleStatus;
+  subtitle?: string;
+  published_version_id?: string | null;
+  published_at?: string | null;
+  scheduled_at?: string | null;
 };
+
+export type ArticleVersionSnapshot = {
+  id: string;
+  article_id: string;
+  approval_status: "draft" | "approved";
+  content_json: Record<string, unknown>;
+};
+
+const articleTextKeys = [
+  "title",
+  "h1",
+  "excerpt",
+  "author",
+  "category",
+  "body",
+  "hero_image",
+  "hero_alt",
+  "seo_title",
+  "meta_description",
+  "canonical",
+  "og_title",
+  "og_description",
+  "focus_phrase",
+  "source_note",
+] as const;
+
+export function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+export function versionContentFromArticle(article: ArticleRecord): Record<string, unknown> {
+  return {
+    title: article.title,
+    h1: article.h1,
+    excerpt: article.excerpt,
+    author: article.author,
+    category: article.category,
+    tags: article.tags,
+    body: article.body,
+    hero_image: article.hero_image,
+    hero_alt: article.hero_alt,
+    seo_title: article.seo_title,
+    meta_description: article.meta_description,
+    canonical: article.canonical,
+    og_title: article.og_title,
+    og_description: article.og_description,
+    focus_phrase: article.focus_phrase,
+    source_note: article.source_note,
+    claims_checked: article.claims_checked,
+  };
+}
+
+function textFromContent(content: Record<string, unknown>, key: (typeof articleTextKeys)[number]): string {
+  const value = content[key];
+  return typeof value === "string" ? value : "";
+}
+
+/**
+ * Public Insights may receive a published article only when it points at the
+ * approved version. Drafts and every other workflow state return null.
+ * Copy comes from that version, so a newer unsaved body on the row stays private.
+ */
+export function articleFromPublishedVersion(
+  row: ArticleRecord,
+  version: ArticleVersionSnapshot | null,
+): ArticleRecord | null {
+  if (row.status !== "published") return null;
+  if (!row.published_version_id || !version) return null;
+  if (!isUuid(row.published_version_id) || version.id !== row.published_version_id) return null;
+  if (version.article_id !== row.id) return null;
+  if (version.approval_status !== "approved") return null;
+
+  const content = version.content_json ?? {};
+  const tags = Array.isArray(content.tags) ? content.tags.filter((tag): tag is string => typeof tag === "string") : [];
+  const published: ArticleRecord = {
+    ...row,
+    status: "published",
+    tags,
+    claims_checked: content.claims_checked === true,
+  };
+  for (const key of articleTextKeys) {
+    published[key] = textFromContent(content, key);
+  }
+  return published;
+}
 
 export type CaseStudyRecord = {
   id: string;

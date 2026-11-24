@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { canPublish, publishChecklist, studioSession, type ArticleRecord } from "@/lib/studio";
-import { listArticles, saveArticle, updateArticle } from "@/lib/studio-store";
+import { listArticles, recordPublishedVersion, saveArticle, updateArticle } from "@/lib/studio-store";
 
 export const runtime = "nodejs";
 
@@ -60,5 +60,15 @@ export async function POST(request: Request) {
       { status: 503 },
     );
   }
-  return NextResponse.json({ ok: true, article: saved });
+  if (!publishing) return NextResponse.json({ ok: true, article: saved });
+
+  const published = await recordPublishedVersion(saved);
+  if (!published) {
+    if (!saved.published_version_id) await updateArticle(saved.id, { status: "draft" });
+    return NextResponse.json(
+      { ok: false, error: "The article was not published because the approved version could not be stored." },
+      { status: 503 },
+    );
+  }
+  return NextResponse.json({ ok: true, article: published });
 }

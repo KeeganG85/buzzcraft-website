@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { insights } from "@/content/insights";
-import { cronAuthorised, cronConfigured, dueScheduled } from "@/lib/studio-schedule";
+import { cronAuthorised, cronConfigured, dueScheduled, scheduleRowPatch } from "@/lib/studio-schedule";
 import { johannesburgInputToUtc, utcToJohannesburgInput } from "@/lib/studio-time";
-import { assetInUse, inspectImage, sanitizeSvg } from "@/lib/studio-media";
+import { assetInUse, countAssetUse, inspectImage, sanitizeSvg } from "@/lib/studio-media";
 
 describe("schedule", () => {
   it("stores Johannesburg time as UTC", () => {
@@ -27,6 +27,13 @@ describe("schedule", () => {
     );
     expect(due.map((item) => item.slug)).toEqual(["notes"]);
   });
+
+  it("stores a schedule without rewriting article fields", () => {
+    expect(scheduleRowPatch("2026-11-24T19:30:00.000Z")).toEqual({
+      status: "scheduled",
+      scheduled_at: "2026-11-24T19:30:00.000Z",
+    });
+  });
 });
 
 describe("media checks", () => {
@@ -47,6 +54,20 @@ describe("media checks", () => {
   it("blocks deletion when an article still uses the file", () => {
     expect(assetInUse("abc.jpg", ["https://example.test/abc.jpg"])).toBe(true);
     expect(assetInUse("abc.jpg", ["https://example.test/other.jpg"])).toBe(false);
+    expect(
+      countAssetUse(
+        { publicUrl: "https://example.test/studio-media/abc.jpg", storagePath: "abc.jpg" },
+        [{ hero_image: "/brand/roundel.webp" }],
+        [{ content_html: "<p>Hello</p>", content_json: { hero_image: "https://example.test/studio-media/abc.jpg" } }],
+      ),
+    ).toBe(1);
+    expect(
+      countAssetUse(
+        { publicUrl: "https://example.test/studio-media/abc.jpg", storagePath: "abc.jpg" },
+        [{ hero_image: "" }],
+        [{ content_html: "<p>Hello</p>", content_json: { hero_image: "/brand/roundel.webp" } }],
+      ),
+    ).toBe(0);
   });
 });
 

@@ -1,4 +1,5 @@
 import type { ArticleRecord, ArticleVersionSnapshot, CaseStudyRecord, VersionPointer } from "@/lib/studio";
+import { countAssetUse } from "@/lib/studio-media";
 import { articleFromPublishedVersion, articleWithDraftContent, articlesWithNewestDraftTitles, isUuid, storageConfigured, versionContentFromArticle } from "@/lib/studio";
 import { docToHtml, docToText, isProseDoc, plainTextToDoc, type ProseNode } from "@/lib/studio-doc";
 import type { GenerationLog } from "@/lib/studio-generate";
@@ -275,14 +276,12 @@ export async function insertMediaAsset(asset: Omit<MediaAssetRecord, "id">): Pro
 }
 
 export async function mediaUsageCount(publicUrl: string, storagePath: string): Promise<number | null> {
-  const heroes = await rest<{ id: string }[]>(
-    `studio_articles?or=(hero_image.eq.${encodeURIComponent(publicUrl)},hero_image.eq.${encodeURIComponent(storagePath)})&select=id`,
+  const articles = await rest<{ hero_image: string | null }[]>("studio_articles?select=hero_image");
+  const versions = await rest<{ content_html: string | null; content_json: unknown }[]>(
+    "article_versions?select=content_html,content_json",
   );
-  const versions = await rest<{ id: string }[]>(
-    `article_versions?or=(content_html.ilike.*${encodeURIComponent(storagePath)}*,content_html.ilike.*${encodeURIComponent(publicUrl)}*)&select=id`,
-  );
-  if (!heroes || !versions) return null;
-  return new Set([...heroes, ...versions].map((row) => row.id)).size;
+  if (!articles || !versions) return null;
+  return countAssetUse({ publicUrl, storagePath }, articles, versions);
 }
 
 export async function deleteMediaAsset(id: string): Promise<boolean> {

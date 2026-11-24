@@ -16,6 +16,11 @@ export function cronAuthorised(header: string | null, secret: string | null | un
   return timingSafeEqual(left, right) ? "ok" : "rejected";
 }
 
+/** Status and time only. Scheduling must not rewrite the article body. */
+export function scheduleRowPatch(scheduledAt: string): { status: "scheduled"; scheduled_at: string } {
+  return { status: "scheduled", scheduled_at: scheduledAt };
+}
+
 export function dueScheduled<T extends { status: string; scheduled_at?: string | null; slug?: string }>(
   articles: T[],
   nowIso: string,

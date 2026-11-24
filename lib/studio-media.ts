@@ -120,3 +120,21 @@ function numberAttr(svg: string, name: string): number | null {
 export function assetInUse(path: string, fields: string[]): boolean {
   return fields.some((field) => field.includes(path));
 }
+
+export function countAssetUse(
+  needle: { publicUrl: string; storagePath: string },
+  articles: { hero_image?: string | null }[],
+  versions: { content_html?: string | null; content_json?: unknown }[],
+): number {
+  const needles = [needle.publicUrl, needle.storagePath].filter((value) => value.length > 0);
+  const hit = (value: string) => needles.some((item) => value.includes(item));
+  let count = 0;
+  for (const article of articles) {
+    if (hit(article.hero_image ?? "")) count += 1;
+  }
+  for (const version of versions) {
+    const snapshot = `${version.content_html ?? ""}\n${JSON.stringify(version.content_json ?? {})}`;
+    if (hit(snapshot)) count += 1;
+  }
+  return count;
+}

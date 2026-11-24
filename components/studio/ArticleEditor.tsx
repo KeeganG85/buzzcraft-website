@@ -14,6 +14,8 @@ import { plainTextToDoc, readingMinutes, wordCount, type ProseNode } from "@/lib
 import { SerialTaskQueue } from "@/lib/studio-save";
 import { AiRevision } from "@/components/studio/AiRevision";
 import { createRevisionContext, sameRevisionContext } from "@/lib/studio-revision";
+import { Diagnostics } from "@/components/studio/Diagnostics";
+import { documentHasLink } from "@/lib/studio-diagnostics";
 import { buttonClass } from "@/components/ui/primitives";
 
 type OutlineItem = { level: number; text: string; pos: number };
@@ -55,7 +57,15 @@ function ToolButton({
   );
 }
 
-export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & { doc?: ProseNode } }) {
+export function ArticleEditor({
+  initial,
+  publishedArticles = [],
+  otherSlugs = [],
+}: {
+  initial?: Partial<ArticleRecord> & { doc?: ProseNode };
+  publishedArticles?: { slug: string; title: string }[];
+  otherSlugs?: string[];
+}) {
   const router = useRouter();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [h1, setH1] = useState(initial?.h1 ?? "");
@@ -359,6 +369,30 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
   const publishPanel = (
     <div className="space-y-4">
       <h2 className="text-sm font-semibold">Publishing</h2>
+      <Diagnostics
+        seoTitle={seoTitle}
+        metaDescription={metaDescription}
+        title={title}
+        h1={h1}
+        slug={slug}
+        excerpt={excerpt}
+        body={text}
+        canonical={canonical}
+        focusPhrase={focusPhrase}
+        heroImage={heroImage}
+        heroAlt={heroAlt}
+        sourceNote={sourceNote}
+        headings={outline.map((item) => ({ level: item.level, text: item.text }))}
+        hasInternalLink={documentHasLink(editor?.getJSON() as ProseNode | undefined)}
+        otherSlugs={otherSlugs}
+        publishedArticles={publishedArticles}
+        onInsertLink={(href, anchor) => {
+          editor?.chain().focus().insertContent([
+            { type: "text", text: anchor, marks: [{ type: "link", attrs: { href } }] },
+            { type: "text", text: " " },
+          ]).run();
+        }}
+      />
       <p className="text-sm text-mid">
         {words} {words === 1 ? "word" : "words"}. {readingLabel}.
       </p>

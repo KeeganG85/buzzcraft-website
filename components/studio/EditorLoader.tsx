@@ -12,6 +12,14 @@ const ArticleEditor = dynamic(
   },
 );
 
-export function EditorLoader({ initial }: { initial?: Partial<ArticleRecord> & { doc?: ProseNode } }) {
-  return <ArticleEditor initial={initial} />;
+export function EditorLoader({
+  initial,
+  publishedArticles = [],
+  otherSlugs = [],
+}: {
+  initial?: Partial<ArticleRecord> & { doc?: ProseNode };
+  publishedArticles?: { slug: string; title: string }[];
+  otherSlugs?: string[];
+}) {
+  return <ArticleEditor initial={initial} publishedArticles={publishedArticles} otherSlugs={otherSlugs} />;
 }

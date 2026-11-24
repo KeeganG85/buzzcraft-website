@@ -9,7 +9,8 @@
   --honeycomb-scale: 1;
   --honeycomb-glow: 0;
 
-  position: fixed;
+  /* Matches the body, so the pattern ends at the footer rather than the viewport. */
+  position: absolute;
   inset: 0;
   z-index: -1;
   overflow: hidden;

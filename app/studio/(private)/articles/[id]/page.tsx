@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EditorLoader } from "@/components/studio/EditorLoader";
-import { getWorkingArticle, listArticles, listPublishedArticles } from "@/lib/studio-store";
+import { getWorkingArticle, listArticleVersions, listArticles, listPublishedArticles } from "@/lib/studio-store";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,11 @@ export default async function EditArticlePage({ params }: { params: Promise<{ id
   const { id } = await params;
   const article = await getWorkingArticle(id);
   if (!article) notFound();
-  const [stored, published] = await Promise.all([listArticles(), listPublishedArticles()]);
+  const [stored, published, revisions] = await Promise.all([
+    listArticles(),
+    listPublishedArticles(),
+    listArticleVersions(article.id),
+  ]);
   const otherSlugs = (stored ?? []).filter((item) => item.id !== article.id).map((item) => item.slug);
   const publishedArticles = published
     .filter((item) => item.slug !== article.slug)
@@ -27,7 +31,13 @@ export default async function EditArticlePage({ params }: { params: Promise<{ id
         </Link>
       </div>
       <div className="mt-8">
-        <EditorLoader initial={article} publishedArticles={publishedArticles} otherSlugs={otherSlugs} />
+        <EditorLoader
+          initial={article}
+          publishedArticles={publishedArticles}
+          otherSlugs={otherSlugs}
+          revisions={revisions ?? []}
+          cronConfigured={Boolean(process.env.CRON_SECRET?.trim())}
+        />
       </div>
     </div>
   );

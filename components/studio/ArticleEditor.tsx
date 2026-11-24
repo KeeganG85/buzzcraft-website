@@ -15,6 +15,9 @@ import { SerialTaskQueue } from "@/lib/studio-save";
 import { AiRevision } from "@/components/studio/AiRevision";
 import { createRevisionContext, sameRevisionContext } from "@/lib/studio-revision";
 import { Diagnostics } from "@/components/studio/Diagnostics";
+import { RevisionList } from "@/components/studio/RevisionList";
+import { ScheduleControl } from "@/components/studio/ScheduleControl";
+import { brandAssets } from "@/lib/studio-media";
 import { documentHasLink } from "@/lib/studio-diagnostics";
 import { buttonClass } from "@/components/ui/primitives";
 
@@ -61,10 +64,14 @@ export function ArticleEditor({
   initial,
   publishedArticles = [],
   otherSlugs = [],
+  revisions = [],
+  cronConfigured = false,
 }: {
   initial?: Partial<ArticleRecord> & { doc?: ProseNode };
   publishedArticles?: { slug: string; title: string }[];
   otherSlugs?: string[];
+  revisions?: { version_number: number; approval_status: string; created_at: string; revision_notes: string }[];
+  cronConfigured?: boolean;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -431,6 +438,24 @@ export function ArticleEditor({
         <input className={fieldClass} value={tags} onChange={(event) => { markChanged(); setTags(event.target.value); }} />
       </label>
       <label className="block text-sm">
+        <span className="font-semibold">Existing brand image</span>
+        <select
+          className={fieldClass}
+          value={brandAssets.some((asset) => asset.path === heroImage) ? heroImage : ""}
+          onChange={(event) => {
+            dirty.current = true;
+            if (event.target.value) setHeroImage(event.target.value);
+          }}
+        >
+          <option value="">Choose a brand file</option>
+          {brandAssets.map((asset) => (
+            <option key={asset.path} value={asset.path}>
+              {asset.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block text-sm">
         <span className="font-semibold">Hero image path</span>
         <input className={fieldClass} value={heroImage} onChange={(event) => { markChanged(); setHeroImage(event.target.value); }} />
       </label>
@@ -498,6 +523,8 @@ export function ArticleEditor({
           ))}
         </ul>
       ) : null}
+      <RevisionList revisions={revisions} />
+      <ScheduleControl articleId={initial?.id ?? ""} scheduledAt={initial?.scheduled_at} cronConfigured={cronConfigured} />
       <AiRevision
         getContext={() => {
           if (!editor) return createRevisionContext(null, 0, 0, "", revisionEpoch.current);

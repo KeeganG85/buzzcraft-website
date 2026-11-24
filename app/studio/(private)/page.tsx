@@ -99,6 +99,10 @@ export default async function StudioHomePage() {
         <Link className="font-semibold text-gold" href="/studio/generate/">
           Generate
         </Link>
+        {" "}
+        <Link className="font-semibold text-gold" href="/studio/media/">
+          Media
+        </Link>
       </p>
 
       <h2 className="mt-12 text-xl font-semibold">Add a case study</h2>

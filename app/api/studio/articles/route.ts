@@ -10,6 +10,8 @@ import {
   type ArticleRecord,
   type ArticleStatus,
 } from "@/lib/studio";
+import { isWithheldInsightSlug } from "@/lib/insights-public";
+import { johannesburgInputToUtc } from "@/lib/studio-time";
 import { listArticles, recordPublishedVersion, saveArticle, saveDraftVersion, updateArticle } from "@/lib/studio-store";
 
 export const runtime = "nodejs";
@@ -67,8 +69,16 @@ export async function POST(request: Request) {
   const otherSlugs = rows.filter((item) => item.id !== article.id).map((item) => item.slug);
   if (!article.slug) article.slug = current?.slug || uniqueSlugFromTitle(article.title, otherSlugs);
   const publishing = body.intent === "publish";
+  const scheduling = body.intent === "schedule";
+  const scheduledAt = scheduling ? johannesburgInputToUtc(String(body.scheduled_local ?? "")) : null;
+  if (scheduling && !scheduledAt) {
+    return NextResponse.json({ ok: false, error: "Choose a date and time in Johannesburg." }, { status: 422 });
+  }
+  if (scheduling && (isWithheldInsightSlug(article.slug) || current?.status === "published")) {
+    return NextResponse.json({ ok: false, error: "That article stays as it is." }, { status: 422 });
+  }
   const plan = articleSavePlan(current?.status ?? null, publishing ? "publish" : "save", null);
-  article.status = plan.status;
+  article.status = scheduling ? "scheduled" : plan.status;
 
   if (publishing) {
     const issues = publishChecklist(article, otherSlugs);
@@ -99,13 +109,25 @@ export async function POST(request: Request) {
     published_version_id: saved.published_version_id,
   };
 
-  if (plan.writeDraftVersion) {
-    const drafted = await saveDraftVersion(stored, doc);
+  if (plan.writeDraftVersion || scheduling) {
+    const drafted = await saveDraftVersion({ ...stored, status: article.status }, doc);
     if (!drafted) {
       return NextResponse.json(
         { ok: false, article: { id: stored.id }, error: "The draft version could not be stored. The live article was left as it was." },
         { status: 503 },
       );
+    }
+    if (scheduling && scheduledAt) {
+      const scheduled = await updateArticle(saved.id, { status: "scheduled", scheduled_at: scheduledAt });
+      if (!scheduled) {
+        return NextResponse.json({ ok: false, error: "The schedule was not stored." }, { status: 503 });
+      }
+      return NextResponse.json({
+        ok: true,
+        article: scheduled,
+        scheduled_at: scheduledAt,
+        cronConfigured: Boolean(process.env.CRON_SECRET?.trim()),
+      });
     }
     return NextResponse.json({ ok: true, article: stored });
   }

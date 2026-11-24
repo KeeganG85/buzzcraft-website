@@ -227,6 +227,70 @@ export async function listCaseStudies(): Promise<CaseStudyRecord[] | null> {
   return rest<CaseStudyRecord[]>("case_studies?select=*&order=updated_at.desc");
 }
 
+export type ArticleVersionSummary = {
+  id: string;
+  version_number: number;
+  approval_status: string;
+  created_at: string;
+  revision_notes: string;
+};
+
+export async function listArticleVersions(articleId: string): Promise<ArticleVersionSummary[] | null> {
+  if (!isUuid(articleId) || !storageConfigured()) return null;
+  return rest<ArticleVersionSummary[]>(
+    `article_versions?article_id=eq.${articleId}&select=id,version_number,approval_status,created_at,revision_notes&order=version_number.desc`,
+  );
+}
+
+export async function listDueScheduledArticles(nowIso: string): Promise<ArticleRecord[] | null> {
+  if (!storageConfigured()) return null;
+  return rest<ArticleRecord[]>(
+    `studio_articles?status=eq.scheduled&scheduled_at=lte.${encodeURIComponent(nowIso)}&select=*`,
+  );
+}
+
+export type MediaAssetRecord = {
+  id: string;
+  storage_path: string;
+  public_url: string;
+  mime: string;
+  byte_size: number;
+  width: number | null;
+  height: number | null;
+  alt: string;
+};
+
+export async function listMediaAssets(): Promise<MediaAssetRecord[] | null> {
+  if (!storageConfigured()) return null;
+  return rest<MediaAssetRecord[]>("media_assets?select=*&order=created_at.desc");
+}
+
+export async function insertMediaAsset(asset: Omit<MediaAssetRecord, "id">): Promise<MediaAssetRecord | null> {
+  const rows = await rest<MediaAssetRecord[]>("media_assets", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(asset),
+  });
+  return rows?.[0] ?? null;
+}
+
+export async function mediaUsageCount(publicUrl: string, storagePath: string): Promise<number | null> {
+  const heroes = await rest<{ id: string }[]>(
+    `studio_articles?or=(hero_image.eq.${encodeURIComponent(publicUrl)},hero_image.eq.${encodeURIComponent(storagePath)})&select=id`,
+  );
+  const versions = await rest<{ id: string }[]>(
+    `article_versions?or=(content_html.ilike.*${encodeURIComponent(storagePath)}*,content_html.ilike.*${encodeURIComponent(publicUrl)}*)&select=id`,
+  );
+  if (!heroes || !versions) return null;
+  return new Set([...heroes, ...versions].map((row) => row.id)).size;
+}
+
+export async function deleteMediaAsset(id: string): Promise<boolean> {
+  if (!isUuid(id)) return false;
+  const rows = await rest<{ id: string }[]>(`media_assets?id=eq.${id}`, { method: "DELETE", headers: { Prefer: "return=representation" } });
+  return Boolean(rows);
+}
+
 export async function insertGenerationLog(entry: GenerationLog): Promise<boolean> {
   const rows = await rest<{ id: string }[]>("ai_generation_logs", {
     method: "POST",

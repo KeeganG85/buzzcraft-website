@@ -47,6 +47,8 @@ Migration `migrations/20261124183000_studio_article_versions.sql` adds `article_
 
 Migration `migrations/20261124200000_studio_generation.sql` adds `ai_generation_logs` and `article_sources`. Logs keep the model name, status, token counts and an error class. They do not store prompts, keys or client notes. Source rows stay `verified = false` until a person checks them.
 
+Migration `migrations/20261124220000_studio_media.sql` adds `media_assets` and the `studio-media` storage bucket. Uploads go through the server. A missing bucket does not stop article editing.
+
 `case_studies` holds studies added later in Studio. The two approved studies also live in `content/case-studies.ts`.
 
 Studio login uses `STUDIO_EMAIL`, `STUDIO_PASSWORD_HASH` and `STUDIO_SESSION_SECRET`. The session cookie is httpOnly and signed. `/studio` is disallowed in robots and is not in the sitemap.

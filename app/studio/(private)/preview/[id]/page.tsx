@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
-import { getArticle } from "@/lib/studio-store";
+import { getWorkingArticle } from "@/lib/studio-store";
 
 export const dynamic = "force-dynamic";
 
 export default async function PreviewArticlePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const article = await getArticle(id);
+  const article = await getWorkingArticle(id);
   if (!article) notFound();
   const paragraphs = article.body.split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
 

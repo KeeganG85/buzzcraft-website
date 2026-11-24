@@ -1,16 +1,29 @@
 import { NextResponse } from "next/server";
-import { canPublish, publishChecklist, studioSession, type ArticleRecord } from "@/lib/studio";
-import { listArticles, recordPublishedVersion, saveArticle, updateArticle } from "@/lib/studio-store";
+import { isProseDoc, plainTextToDoc, docToText, type ProseNode } from "@/lib/studio-doc";
+import {
+  articleSavePlan,
+  canPublish,
+  publishChecklist,
+  rowPatchForSave,
+  slugifyTitle,
+  studioSession,
+  type ArticleRecord,
+  type ArticleStatus,
+} from "@/lib/studio";
+import { listArticles, recordPublishedVersion, saveArticle, saveDraftVersion, updateArticle } from "@/lib/studio-store";
 
 export const runtime = "nodejs";
 
-function asArticle(body: Record<string, unknown>, id = ""): ArticleRecord {
+const statuses = new Set<ArticleStatus>(["draft", "in_review", "approved", "scheduled", "published", "archived"]);
+
+function asArticle(body: Record<string, unknown>, id: string, doc: ProseNode): ArticleRecord {
   const tags = Array.isArray(body.tags)
     ? body.tags.map(String)
     : String(body.tags ?? "")
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean);
+  const requestedStatus = String(body.status ?? "");
   return {
     id,
     slug: String(body.slug ?? "").trim(),
@@ -20,7 +33,7 @@ function asArticle(body: Record<string, unknown>, id = ""): ArticleRecord {
     author: String(body.author ?? "").trim(),
     category: String(body.category ?? "").trim(),
     tags,
-    body: String(body.body ?? ""),
+    body: docToText(doc),
     hero_image: String(body.hero_image ?? "").trim(),
     hero_alt: String(body.hero_alt ?? "").trim(),
     publish_date: String(body.publish_date ?? ""),
@@ -32,7 +45,7 @@ function asArticle(body: Record<string, unknown>, id = ""): ArticleRecord {
     focus_phrase: String(body.focus_phrase ?? "").trim(),
     source_note: String(body.source_note ?? "").trim(),
     claims_checked: body.claims_checked === true,
-    status: "draft",
+    status: statuses.has(requestedStatus as ArticleStatus) ? (requestedStatus as ArticleStatus) : "draft",
   };
 }
 
@@ -40,10 +53,23 @@ export async function POST(request: Request) {
   const session = await studioSession();
   if (!session) return NextResponse.json({ ok: false }, { status: 401 });
   const body = (await request.json()) as Record<string, unknown>;
-  const article = asArticle(body, String(body.id ?? ""));
-  const existing = (await listArticles()) ?? [];
-  const otherSlugs = existing.filter((item) => item.id !== article.id).map((item) => item.slug);
+  const doc = isProseDoc(body.doc) ? body.doc : plainTextToDoc(String(body.body ?? ""));
+  const article = asArticle(body, String(body.id ?? ""), doc);
+  const existingRows = await listArticles();
+  if (article.id && !existingRows) {
+    return NextResponse.json(
+      { ok: false, error: "Article storage is not configured, so nothing was saved." },
+      { status: 503 },
+    );
+  }
+  const rows = existingRows ?? [];
+  const current = rows.find((item) => item.id === article.id) ?? null;
+  if (!article.slug) article.slug = current?.slug || slugifyTitle(article.title);
+  const otherSlugs = rows.filter((item) => item.id !== article.id).map((item) => item.slug);
   const publishing = body.intent === "publish";
+  const plan = articleSavePlan(current?.status ?? null, publishing ? "publish" : "save", null);
+  article.status = plan.status;
+
   if (publishing) {
     const issues = publishChecklist(article, otherSlugs);
     if (!canPublish(article, otherSlugs)) {
@@ -51,25 +77,39 @@ export async function POST(request: Request) {
     }
     if (!article.publish_date) article.publish_date = new Date().toISOString().slice(0, 10);
   }
-  const id = article.id;
-  const fields: Partial<ArticleRecord> & { slug: string } = { ...article };
-  delete fields.id;
-  delete fields.status;
-  // Keep the existing workflow state intact until the publication transaction
-  // succeeds. A new row remains a draft if publication fails.
-  const saved = id
-    ? await updateArticle(id, fields)
-    : await saveArticle({ ...fields, status: "draft" });
+
+  const patch = rowPatchForSave(article, plan.updateRowContent);
+  const saved = article.id
+    ? await updateArticle(article.id, patch)
+    : await saveArticle({ ...patch, slug: article.slug });
   if (!saved) {
     return NextResponse.json(
-      { ok: false, error: "Article storage is not configured, so nothing was published." },
+      { ok: false, error: "Article storage is not configured, so nothing was saved." },
       { status: 503 },
     );
   }
-  if (!publishing) return NextResponse.json({ ok: true, article: saved });
 
-  const published = await recordPublishedVersion(saved);
+  const stored: ArticleRecord = {
+    ...article,
+    id: saved.id,
+    status: plan.updateRowContent ? saved.status : (current?.status ?? saved.status),
+    published_version_id: saved.published_version_id,
+  };
+
+  if (plan.writeDraftVersion) {
+    const drafted = await saveDraftVersion(stored, doc);
+    if (!drafted) {
+      return NextResponse.json(
+        { ok: false, error: "The draft version could not be stored. The live article was left as it was." },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json({ ok: true, article: stored });
+  }
+
+  const published = await recordPublishedVersion(stored, doc);
   if (!published) {
+    if (!saved.published_version_id) await updateArticle(saved.id, { status: "draft" });
     return NextResponse.json(
       { ok: false, error: "The article was not published because the approved version could not be stored." },
       { status: 503 },

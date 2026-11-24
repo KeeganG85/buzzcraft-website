@@ -12,6 +12,16 @@
     "studio:hash": "node scripts/hash-studio-password.mjs"
   },
   "dependencies": {
+    "@tiptap/extension-link": "^3.35.0",
+    "@tiptap/extension-placeholder": "^3.35.0",
+    "@tiptap/extension-table": "^3.35.0",
+    "@tiptap/extension-table-cell": "^3.35.0",
+    "@tiptap/extension-table-header": "^3.35.0",
+    "@tiptap/extension-table-row": "^3.35.0",
+    "@tiptap/markdown": "^3.35.0",
+    "@tiptap/pm": "^3.35.0",
+    "@tiptap/react": "^3.35.0",
+    "@tiptap/starter-kit": "^3.35.0",
     "gsap": "^3.13.0",
     "next": "^15.4.11",
     "react": "^19.1.0",

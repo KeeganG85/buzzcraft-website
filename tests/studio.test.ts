@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 import { insights } from "@/content/insights";
 import { loginRateLimiter, requestIp } from "@/lib/rate-limit";
 import {
+  articleCounts,
   articleFromPublishedVersion,
+  articleSavePlan,
   articleStatuses,
+  articleWithDraftContent,
   canPublish,
   publishChecklist,
+  rowPatchForSave,
   studioRobots,
   type ArticleRecord,
   type ArticleVersionSnapshot,
@@ -138,6 +142,68 @@ describe("studio login rate limit", () => {
     expect(requestIp(request)).toBe("203.0.113.10");
     expect(requestIp(request, { trustForwardedFor: false })).toBe("unknown");
     expect(requestIp(new Request("https://www.buzzcraft.co.za/api/studio/login/"))).toBe("unknown");
+  });
+});
+
+describe("draft saves", () => {
+  const versionId = "22222222-2222-4222-8222-222222222222";
+
+  it("keeps a published article published and leaves the public pointer alone", () => {
+    const plan = articleSavePlan("published", "save", {
+      id: versionId,
+      version_number: 1,
+      approval_status: "approved",
+    });
+    expect(plan.status).toBe("published");
+    expect(plan.updateRowContent).toBe(false);
+    expect(plan.writeDraftVersion).toBe(true);
+    expect(plan.version).toEqual({ action: "insert", version_number: 2, approval_status: "draft" });
+    const patch = rowPatchForSave(article({ status: "published", published_version_id: versionId, body: "New draft" }), plan.updateRowContent);
+    expect(patch).toEqual({});
+    expect(patch).not.toHaveProperty("published_version_id");
+  });
+
+  it("updates the open draft instead of adding another version", () => {
+    const plan = articleSavePlan("draft", "save", {
+      id: versionId,
+      version_number: 3,
+      approval_status: "draft",
+    });
+    expect(plan.version).toEqual({ action: "update", id: versionId });
+    expect(plan.updateRowContent).toBe(true);
+    expect(rowPatchForSave(article({ published_version_id: versionId }), true)).not.toHaveProperty("published_version_id");
+  });
+
+  it("overlays draft copy without changing status or the published pointer", () => {
+    const row = article({
+      status: "published",
+      published_version_id: versionId,
+      title: "Live title",
+      body: "Live body",
+    });
+    const working = articleWithDraftContent(
+      row,
+      { title: "Draft title", body: "Draft body", tags: ["draft"] },
+      { slug: "draft-slug" },
+    );
+    expect(working.title).toBe("Draft title");
+    expect(working.body).toBe("Draft body");
+    expect(working.slug).toBe("draft-slug");
+    expect(working.status).toBe("published");
+    expect(working.published_version_id).toBe(versionId);
+  });
+
+  it("counts the real workflow states", () => {
+    expect(
+      articleCounts([
+        { status: "draft" },
+        { status: "draft" },
+        { status: "in_review" },
+        { status: "scheduled" },
+        { status: "published" },
+        { status: "archived" },
+      ]),
+    ).toEqual({ stored: 6, draft: 2, review: 1, scheduled: 1, published: 1 });
   });
 });
 

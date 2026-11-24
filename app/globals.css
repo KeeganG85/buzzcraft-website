@@ -105,3 +105,74 @@ body {
     animation: none;
   }
 }
+
+.studio-editor .ProseMirror h2 {
+  margin-top: 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 650;
+}
+
+.studio-editor .ProseMirror h3 {
+  margin-top: 1rem;
+  font-size: 1.25rem;
+  font-weight: 650;
+}
+
+.studio-editor .ProseMirror p,
+.studio-editor .ProseMirror ul,
+.studio-editor .ProseMirror ol,
+.studio-editor .ProseMirror blockquote,
+.studio-editor .ProseMirror pre,
+.studio-editor .ProseMirror table {
+  margin-top: 0.75rem;
+}
+
+.studio-editor .ProseMirror ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+
+.studio-editor .ProseMirror ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+
+.studio-editor .ProseMirror blockquote {
+  border-left: 2px solid var(--color-gold);
+  padding-left: 0.75rem;
+}
+
+.studio-editor .ProseMirror pre {
+  overflow-x: auto;
+  padding: 0.75rem;
+}
+
+.studio-editor .ProseMirror a {
+  color: var(--color-gold);
+  text-decoration: underline;
+}
+
+.studio-editor .ProseMirror hr {
+  margin: 1.5rem 0;
+  border-color: rgba(248, 250, 252, 0.15);
+}
+
+.studio-editor .ProseMirror table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.studio-editor .ProseMirror td,
+.studio-editor .ProseMirror th {
+  border: 1px solid rgba(248, 250, 252, 0.15);
+  padding: 0.5rem;
+}
+
+.studio-editor .ProseMirror p.is-editor-empty:first-child::before,
+.studio-editor .ProseMirror p.is-empty:first-child::before {
+  color: var(--color-mid);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

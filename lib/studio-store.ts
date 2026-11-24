@@ -1,5 +1,6 @@
-import type { ArticleRecord, ArticleVersionSnapshot, CaseStudyRecord } from "@/lib/studio";
-import { articleFromPublishedVersion, isUuid, storageConfigured, versionContentFromArticle } from "@/lib/studio";
+import type { ArticleRecord, ArticleVersionSnapshot, CaseStudyRecord, VersionPointer } from "@/lib/studio";
+import { articleFromPublishedVersion, articleWithDraftContent, isUuid, storageConfigured, versionContentFromArticle } from "@/lib/studio";
+import { docToHtml, docToText, isProseDoc, plainTextToDoc, type ProseNode } from "@/lib/studio-doc";
 
 function db() {
   const url = process.env.SUPABASE_URL?.replace(/\/$/, "");
@@ -26,9 +27,56 @@ async function rest<T>(path: string, init?: RequestInit): Promise<T | null> {
   return (await res.json()) as T;
 }
 
+type DraftVersionRow = {
+  id: string;
+  article_id: string;
+  version_number: number;
+  approval_status: "draft" | "approved";
+  content_json: Record<string, unknown>;
+  metadata_json?: Record<string, unknown>;
+};
+
+async function latestVersion(articleId: string): Promise<DraftVersionRow | null> {
+  if (!isUuid(articleId)) return null;
+  const rows = await rest<DraftVersionRow[]>(
+    `article_versions?article_id=eq.${articleId}&select=id,article_id,version_number,approval_status,content_json,metadata_json&order=version_number.desc&limit=1`,
+  );
+  return rows?.[0] ?? null;
+}
+
 export async function listArticles(): Promise<ArticleRecord[] | null> {
   if (!storageConfigured()) return null;
-  return rest<ArticleRecord[]>("studio_articles?select=*&order=updated_at.desc");
+  const rows = await rest<ArticleRecord[]>("studio_articles?select=*&order=updated_at.desc");
+  if (!rows) return null;
+  const drafts = await rest<DraftVersionRow[]>(
+    "article_versions?approval_status=eq.draft&select=article_id,version_number,content_json&order=version_number.desc",
+  );
+  if (!drafts) return rows;
+  const newest = new Map<string, DraftVersionRow>();
+  for (const draft of drafts) {
+    if (!newest.has(draft.article_id)) newest.set(draft.article_id, draft);
+  }
+  return rows.map((row) => {
+    const draft = newest.get(row.id);
+    const title = draft?.content_json?.title;
+    if (typeof title !== "string" || !title.trim()) return row;
+    return { ...row, title };
+  });
+}
+
+export type WorkingArticle = ArticleRecord & { doc: ProseNode };
+
+export async function getWorkingArticle(id: string): Promise<WorkingArticle | null> {
+  const row = await getArticle(id);
+  if (!row) return null;
+  const latest = await latestVersion(id);
+  if (!latest || latest.approval_status !== "draft") {
+    const doc = isProseDoc(latest?.content_json?.doc) ? (latest?.content_json.doc as ProseNode) : plainTextToDoc(row.body);
+    return { ...row, doc };
+  }
+  const working = articleWithDraftContent(row, latest.content_json, latest.metadata_json ?? null);
+  const doc = isProseDoc(latest.content_json.doc) ? latest.content_json.doc : plainTextToDoc(working.body);
+  return { ...working, doc };
 }
 
 export type PublishedArticleLookup =
@@ -36,11 +84,7 @@ export type PublishedArticleLookup =
   | { state: "no-version"; articles: [] }
   | { state: "version"; articles: ArticleRecord[] };
 
-/**
- * Public content is available only through an approved version named by the
- * article row. Lookup errors and successful empty results are separate states,
- * and neither state falls back to flat legacy columns.
- */
+/** Public reads require the approved version named by the article row. */
 export async function lookupPublishedArticles(): Promise<PublishedArticleLookup> {
   try {
     const rows = await rest<ArticleRecord[]>(
@@ -74,29 +118,80 @@ export async function listPublishedArticles(): Promise<ArticleRecord[]> {
   return result.state === "version" ? result.articles : [];
 }
 
-export async function recordPublishedVersion(article: ArticleRecord): Promise<ArticleRecord | null> {
-  if (!isUuid(article.id)) return null;
-  try {
-    const published = await rest<ArticleRecord[]>("rpc/publish_studio_article_version", {
-      method: "POST",
+export async function saveDraftVersion(article: ArticleRecord, doc: ProseNode): Promise<boolean> {
+  if (!isUuid(article.id)) return false;
+  const prior = await rest<VersionPointer[]>(
+    `article_versions?article_id=eq.${article.id}&select=id,version_number,approval_status&order=version_number.desc&limit=1`,
+  );
+  if (!prior) return false;
+  const latest = prior[0] ?? null;
+  const content_json = { ...versionContentFromArticle({ ...article, body: docToText(doc) }), doc };
+  const content_html = docToHtml(doc);
+  const metadata_json = { slug: article.slug, publish_date: article.publish_date, status: article.status };
+  if (latest?.approval_status === "draft") {
+    const rows = await rest<DraftVersionRow[]>(`article_versions?id=eq.${latest.id}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
       body: JSON.stringify({
-        p_article_id: article.id,
-        p_content_json: versionContentFromArticle(article),
-        p_content_html: article.body,
-        p_metadata_json: {
-          slug: article.slug,
-          publish_date: article.publish_date || null,
-          status: "published",
-        },
-        p_created_by: article.author || "studio",
-        p_revision_notes: "Published from Studio",
-        p_approved_by: article.author || "studio",
+        content_json,
+        content_html,
+        metadata_json,
+        revision_notes: "Draft save",
       }),
     });
-    return published?.[0] ?? null;
-  } catch {
-    return null;
+    return Boolean(rows?.[0]);
   }
+  const inserted = await rest<DraftVersionRow[]>("article_versions", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      article_id: article.id,
+      version_number: (latest?.version_number ?? 0) + 1,
+      content_json,
+      content_html,
+      metadata_json,
+      created_by: article.author || "studio",
+      revision_notes: "Draft save",
+      approval_status: "draft",
+    }),
+  });
+  return Boolean(inserted?.[0]);
+}
+
+export async function recordPublishedVersion(article: ArticleRecord, doc?: ProseNode | null): Promise<ArticleRecord | null> {
+  if (!isUuid(article.id)) return null;
+  const prior = await rest<{ version_number: number }[]>(
+    `article_versions?article_id=eq.${article.id}&select=version_number&order=version_number.desc&limit=1`,
+  );
+  if (!prior) return null;
+  const nextNumber = (prior[0]?.version_number ?? 0) + 1;
+  const inserted = await rest<ArticleVersionSnapshot[]>("article_versions", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      article_id: article.id,
+      version_number: nextNumber,
+      content_json: { ...versionContentFromArticle(article), ...(doc ? { doc } : {}) },
+      content_html: doc ? docToHtml(doc) : article.body,
+      metadata_json: {
+        slug: article.slug,
+        publish_date: article.publish_date,
+        status: "published",
+      },
+      created_by: article.author || "studio",
+      revision_notes: "Published from Studio",
+      approval_status: "approved",
+      approved_by: article.author || "studio",
+      approved_at: new Date().toISOString(),
+    }),
+  });
+  const created = inserted?.[0];
+  if (!created || !isUuid(created.id)) return null;
+  return updateArticle(article.id, {
+    status: "published",
+    published_version_id: created.id,
+    ...(article.published_at ? {} : { published_at: new Date().toISOString() }),
+  });
 }
 
 export async function getArticle(id: string): Promise<ArticleRecord | null> {

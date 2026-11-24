@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CaseStudyForm } from "@/components/studio/CaseStudyForm";
 import { insights } from "@/content/insights";
-import { studioCookie } from "@/lib/studio";
+import { articleCounts, studioCookie } from "@/lib/studio";
 import { listArticles, listCaseStudies } from "@/lib/studio-store";
 import { storageConfigured } from "@/lib/studio";
 
@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function StudioHomePage() {
   const articles = await listArticles();
   const studies = await listCaseStudies();
+  const counts = articles ? articleCounts(articles) : null;
 
   async function logout() {
     "use server";
@@ -35,11 +36,39 @@ export default async function StudioHomePage() {
         Nothing here calls an external writing model.
       </p>
       {!storageConfigured() ? (
-        <p className="mt-6 border border-gold/40 bg-surface p-4 text-sm leading-6">
-          Supabase is not configured, so new articles and case studies cannot be stored. The three repository
-          drafts below stay unpublished.
+        <p className="mt-6 border border-gold/40 bg-surface p-4 text-sm leading-6" role="alert">
+          Supabase is not configured, so new articles and case studies cannot be stored. Counts are unavailable.
+          The three repository drafts below stay unpublished.
         </p>
-      ) : null}
+      ) : articles === null ? (
+        <p className="mt-6 border border-gold/40 bg-surface p-4 text-sm leading-6" role="alert">
+          Stored articles could not be loaded. Nothing new was published.
+        </p>
+      ) : (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold">Articles</h2>
+          <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {(
+              [
+                ["Draft", counts?.draft ?? 0],
+                ["Review", counts?.review ?? 0],
+                ["Scheduled", counts?.scheduled ?? 0],
+                ["Published", counts?.published ?? 0],
+              ] as const
+            ).map(([label, count]) => (
+              <div key={label} className="rounded-lg border border-white/10 bg-surface p-4">
+                <dt className="text-sm text-mid">{label}</dt>
+                <dd className="mt-1 text-2xl font-semibold tnum">{count}</dd>
+              </div>
+            ))}
+          </dl>
+          {articles.length === 0 ? (
+            <p className="mt-4 text-sm text-mid">No stored articles yet.</p>
+          ) : (
+            <p className="mt-4 text-sm text-mid">{counts?.stored ?? 0} stored.</p>
+          )}
+        </div>
+      )}
 
       <h2 className="mt-10 text-xl font-semibold">Repository drafts</h2>
       <ul className="mt-3 space-y-2 text-sm">
@@ -60,7 +89,7 @@ export default async function StudioHomePage() {
             <span className="text-mid">{item.status}</span>
           </li>
         ))}
-        {articles && articles.length === 0 ? <li className="text-mid">No stored articles yet.</li> : null}
+        {articles && articles.length === 0 ? <li className="text-mid">Nothing is stored yet.</li> : null}
       </ul>
       <p className="mt-4">
         <Link className="font-semibold text-gold" href="/studio/articles/new/">

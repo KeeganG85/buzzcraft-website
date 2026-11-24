@@ -10,8 +10,9 @@ import { useRouter } from "next/navigation";
 import type { ArticleRecord } from "@/lib/studio";
 import { slugifyTitle } from "@/lib/studio-slug";
 import { publishChecklist } from "@/lib/studio-checklist";
-import { readingMinutes, wordCount, type ProseNode } from "@/lib/studio-doc";
+import { plainTextToDoc, readingMinutes, wordCount, type ProseNode } from "@/lib/studio-doc";
 import { SerialTaskQueue } from "@/lib/studio-save";
+import { AiRevision } from "@/components/studio/AiRevision";
 import { buttonClass } from "@/components/ui/primitives";
 
 type OutlineItem = { level: number; text: string; pos: number };
@@ -456,6 +457,13 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
           ))}
         </ul>
       ) : null}
+      <AiRevision
+        articleId={initial?.id ?? ""}
+        getText={() => editor?.getText({ blockSeparator: "\n\n" }) ?? text}
+        onAccepted={(next) => {
+          editor?.commands.setContent(plainTextToDoc(next));
+        }}
+      />
       <div className="flex flex-wrap gap-3">
         <button type="button" className={buttonClass("secondary")} onClick={() => void send("save")}>
           Save draft

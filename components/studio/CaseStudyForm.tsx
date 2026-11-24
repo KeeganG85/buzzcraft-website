@@ -43,13 +43,17 @@ export function CaseStudyForm() {
       ))}
       <label className="block text-sm">
         <span className="font-semibold">Summary, only what you can verify</span>
-        <textarea name="summary" rows={3} className="mt-1 w-full rounded-lg border border-white/15 bg-ink px-3 py-2" />
+        <textarea name="summary" rows={3} className="mt-1 min-h-11 w-full rounded-lg border border-white/15 bg-ink px-3 py-2" />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">What the public site shows</span>
-        <textarea name="observed" rows={4} className="mt-1 w-full rounded-lg border border-white/15 bg-ink px-3 py-2" />
+        <textarea name="observed" rows={4} className="mt-1 min-h-11 w-full rounded-lg border border-white/15 bg-ink px-3 py-2" />
       </label>
-      {message ? <p className="text-sm text-mid">{message}</p> : null}
+      {message ? (
+        <p className="text-sm text-mid" role="status">
+          {message}
+        </p>
+      ) : null}
       <button className={buttonClass("primary")} type="submit">
         Publish case study
       </button>

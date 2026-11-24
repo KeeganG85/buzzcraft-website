@@ -95,6 +95,7 @@ export function publicHttpUrl(value: string): URL | null {
   if (url.username || url.password) return null;
   const host = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
   if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) return null;
+  if (/^\d+$/.test(host)) return null;
   if (isIP(host) && isBlockedIp(host)) return null;
   // WHATWG URL normalizes decimal, octal, hexadecimal, and shortened IPv4 forms.
   // Accept literal IPv4 only in canonical dotted-decimal form (#21).

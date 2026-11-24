@@ -85,10 +85,37 @@ describe("public insights", () => {
     expect(crumbs).toContain(item.h1);
   });
 
-  it("rejects unsafe article HTML", () => {
+  it("keeps the HTML allowlist and drops unsafe markup", () => {
     expect(safeInsightHtml("<p>Hello</p>")).toBe("<p>Hello</p>");
     expect(safeInsightHtml("<p>Hello</p><script>alert(1)</script>")).toBeNull();
     expect(safeInsightHtml("Plain text")).toBeNull();
+    expect(safeInsightHtml('<a href="https://www.buzzcraft.co.za/scorecard/">Scorecard</a>')).toBe(
+      '<a href="https://www.buzzcraft.co.za/scorecard/">Scorecard</a>',
+    );
+    expect(safeInsightHtml('<a href="javascript:alert(1)">x</a>')).toBeNull();
+    expect(safeInsightHtml('<a href="javascript&colon;alert(1)">x</a>')).toBeNull();
+    expect(safeInsightHtml('<a href="https://www.buzzcraft.co.za/" onclick="alert(1)">x</a>')).toBeNull();
+    expect(safeInsightHtml('<p><iframe src="https://evil.example/"></iframe></p>')).toBeNull();
+    expect(safeInsightHtml('<img src="javascript:alert(1)" alt="x">')).toBeNull();
+    expect(safeInsightHtml('<img src="https://www.buzzcraft.co.za/brand/roundel.webp">')).toBeNull();
+    expect(safeInsightHtml('<img src="https://www.buzzcraft.co.za/brand/roundel.webp" alt="BuzzCraft roundel">')).toBe(
+      '<img src="https://www.buzzcraft.co.za/brand/roundel.webp" alt="BuzzCraft roundel">',
+    );
+  });
+
+  it("does not import repository drafts into the public insight files", () => {
+    const files = [
+      "app/insights/page.tsx",
+      "app/insights/[slug]/page.tsx",
+      "app/insights/category/[slug]/page.tsx",
+      "components/insights/InsightArticle.tsx",
+      "components/insights/InsightList.tsx",
+    ];
+    for (const file of files) {
+      const text = fs.readFileSync(path.join(process.cwd(), file), "utf8");
+      expect(text).not.toContain("content/insights");
+      expect(text).not.toContain("what-is-a-growth-system");
+    }
   });
 
   it("does not import TipTap from public insight files", () => {

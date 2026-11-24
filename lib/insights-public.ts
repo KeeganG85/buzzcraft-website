@@ -1,4 +1,4 @@
-import { readingMinutes, wordCount } from "@/lib/studio-doc";
+import { readingMinutes, safeUrl, wordCount } from "@/lib/studio-doc";
 import { absoluteUrl, canonicalPath } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 import type { ArticleRecord } from "@/lib/studio";
@@ -104,6 +104,7 @@ export function redirectSlug(requested: string, current: string | null | undefin
 
 const allowedTags = new Set([
   "p",
+  "h1",
   "h2",
   "h3",
   "ul",
@@ -115,6 +116,7 @@ const allowedTags = new Set([
   "strong",
   "em",
   "a",
+  "img",
   "table",
   "thead",
   "tbody",
@@ -127,16 +129,153 @@ const allowedTags = new Set([
   "u",
 ]);
 
+const voidTags = new Set(["br", "hr", "img"]);
+
+function escapeAttr(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function decodeAttr(value: string): string {
+  let current = value.replace(/[\u0000-\u001F\u007F]/g, "");
+  for (let pass = 0; pass < 2; pass += 1) {
+    current = current
+      .replace(/&amp;/gi, "&")
+      .replace(/&colon;/gi, ":")
+      .replace(/&tab;/gi, "")
+      .replace(/&newline;/gi, "")
+      .replace(/&#x0*3a;/gi, ":")
+      .replace(/&#0*58;/g, ":")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#x([0-9a-f]{1,6});/gi, (_, hex: string) => point(Number.parseInt(hex, 16)))
+      .replace(/&#([0-9]{1,7});/g, (_, num: string) => point(Number(num)));
+  }
+  return current.trim();
+}
+
+function point(code: number): string {
+  if (!Number.isFinite(code) || code <= 31 || code === 127 || code > 0x10ffff) return "";
+  return String.fromCodePoint(code);
+}
+
+function safeHref(raw: string): string | null {
+  const decoded = decodeAttr(raw).replace(/\s+/g, "");
+  const href = safeUrl(decoded);
+  if (!href || href.toLowerCase().startsWith("data:")) return null;
+  return href;
+}
+
+function safeImageSrc(raw: string): string | null {
+  const href = safeHref(raw);
+  if (!href || href.startsWith("mailto:")) return null;
+  return href;
+}
+
+function parseAttrs(source: string): Record<string, string> | null {
+  const attrs: Record<string, string> = {};
+  let index = 0;
+  while (index < source.length) {
+    while (index < source.length && /\s/.test(source[index] ?? "")) index += 1;
+    if (index >= source.length) break;
+    const nameMatch = /^[a-zA-Z_:][-a-zA-Z0-9_:.]*/.exec(source.slice(index));
+    if (!nameMatch) return null;
+    const name = nameMatch[0].toLowerCase();
+    index += nameMatch[0].length;
+    while (index < source.length && /\s/.test(source[index] ?? "")) index += 1;
+    if (source[index] !== "=") return null;
+    index += 1;
+    while (index < source.length && /\s/.test(source[index] ?? "")) index += 1;
+    let value = "";
+    const quote = source[index];
+    if (quote === '"' || quote === "'") {
+      const end = source.indexOf(quote, index + 1);
+      if (end === -1) return null;
+      value = source.slice(index + 1, end);
+      index = end + 1;
+    } else {
+      const start = index;
+      while (index < source.length && !/\s/.test(source[index] ?? "")) index += 1;
+      value = source.slice(start, index);
+      if (!value) return null;
+    }
+    if (name.startsWith("on") || name === "style" || name === "srcdoc" || attrs[name] !== undefined) return null;
+    attrs[name] = value;
+  }
+  return attrs;
+}
+
+function renderOpen(name: string, attrs: Record<string, string>): string | null {
+  const keys = Object.keys(attrs);
+  if (name === "a") {
+    if (keys.length !== 1 || !attrs.href) return null;
+    const href = safeHref(attrs.href);
+    if (!href) return null;
+    return `<a href="${escapeAttr(href)}">`;
+  }
+  if (name === "img") {
+    if (!attrs.src || !attrs.alt?.trim()) return null;
+    if (keys.some((key) => !["src", "alt", "width", "height"].includes(key))) return null;
+    const src = safeImageSrc(attrs.src);
+    if (!src) return null;
+    let tag = `<img src="${escapeAttr(src)}" alt="${escapeAttr(decodeAttr(attrs.alt))}"`;
+    for (const key of ["width", "height"] as const) {
+      if (!attrs[key]) continue;
+      if (!/^[1-9][0-9]{0,3}$/.test(attrs[key])) return null;
+      tag += ` ${key}="${attrs[key]}"`;
+    }
+    return `${tag}>`;
+  }
+  if (name === "th" || name === "td") {
+    if (keys.some((key) => key !== "colspan" && key !== "rowspan")) return null;
+    let tag = `<${name}`;
+    for (const key of ["colspan", "rowspan"] as const) {
+      if (!attrs[key]) continue;
+      if (!/^[1-9][0-9]{0,2}$/.test(attrs[key])) return null;
+      tag += ` ${key}="${attrs[key]}"`;
+    }
+    return `${tag}>`;
+  }
+  if (keys.length > 0) return null;
+  return `<${name}>`;
+}
+
+/** Rebuilds article HTML from an allowlist. Anything outside that list is dropped entirely. */
 export function safeInsightHtml(html: string): string | null {
   const trimmed = html.trim();
-  if (!trimmed.includes("<")) return null;
-  if (/<\s*script|javascript:|on\w+\s*=/i.test(trimmed)) return null;
-  const tags = trimmed.match(/<\/?\s*([a-z0-9]+)/gi) ?? [];
-  for (const tag of tags) {
-    const name = tag.replace(/<\/?\s*/, "").toLowerCase();
+  if (!trimmed.includes("<") || trimmed.includes("\0")) return null;
+  let out = "";
+  let index = 0;
+  while (index < trimmed.length) {
+    const start = trimmed.indexOf("<", index);
+    if (start === -1) {
+      out += trimmed.slice(index);
+      break;
+    }
+    out += trimmed.slice(index, start);
+    if (trimmed.startsWith("<!--", start) || trimmed.startsWith("<!", start) || trimmed.startsWith("<?", start)) {
+      return null;
+    }
+    const end = trimmed.indexOf(">", start);
+    if (end === -1) return null;
+    const raw = trimmed.slice(start + 1, end).trim();
+    const closing = raw.startsWith("/");
+    const body = (closing ? raw.slice(1) : raw.replace(/\/\s*$/, "")).trim();
+    const nameMatch = /^([a-zA-Z0-9]+)/.exec(body);
+    if (!nameMatch) return null;
+    const name = nameMatch[1].toLowerCase();
     if (!allowedTags.has(name)) return null;
+    if (closing) {
+      if (voidTags.has(name) || body.slice(nameMatch[1].length).trim()) return null;
+      out += `</${name}>`;
+    } else {
+      const attrs = parseAttrs(body.slice(nameMatch[1].length));
+      if (!attrs) return null;
+      const open = renderOpen(name, attrs);
+      if (!open) return null;
+      out += open;
+    }
+    index = end + 1;
   }
-  return trimmed;
+  return out;
 }
 
 export function headingContents(html: string): { id: string; text: string; level: 2 | 3 }[] {

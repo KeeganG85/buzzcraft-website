@@ -49,7 +49,7 @@ export function InsightArticle({ article, related }: { article: PublicInsight; r
               {index === crumbs.length - 1 ? (
                 <span aria-current="page">{crumb.name}</span>
               ) : (
-                <Link className="underline" href={crumb.href}>
+                <Link className="inline-flex min-h-11 items-center underline" href={crumb.href}>
                   {crumb.name}
                 </Link>
               )}
@@ -82,7 +82,7 @@ export function InsightArticle({ article, related }: { article: PublicInsight; r
           <ol className="mt-3 list-decimal space-y-2 pl-5">
             {toc.map((item) => (
               <li key={item.id} className={item.level === 3 ? "ml-4" : ""}>
-                <a className="underline" href={`#${item.id}`}>
+                <a className="inline-flex min-h-11 items-center underline" href={`#${item.id}`}>
                   {item.text}
                 </a>
               </li>
@@ -111,7 +111,7 @@ export function InsightArticle({ article, related }: { article: PublicInsight; r
           <ul className="mt-4 space-y-3">
             {related.map((item) => (
               <li key={item.id}>
-                <Link className="text-gold underline" href={insightPath(item.slug)}>
+                <Link className="inline-flex min-h-11 items-center text-gold underline" href={insightPath(item.slug)}>
                   {item.title}
                 </Link>
               </li>

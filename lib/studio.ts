@@ -134,6 +134,12 @@ export function articleFromPublishedVersion(
   return published;
 }
 
+/** HTML for the public page. A draft version, or a published row with no approved version, contributes nothing. */
+export function publishedArticleHtml(row: ArticleRecord, version: ArticleVersionSnapshot | null): string | null {
+  if (!articleFromPublishedVersion(row, version)) return null;
+  return version?.content_html ?? "";
+}
+
 export type CaseStudyRecord = {
   id: string;
   slug: string;

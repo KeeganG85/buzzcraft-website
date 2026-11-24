@@ -49,3 +49,34 @@ Copy the printed `scrypt$...` line into `STUDIO_PASSWORD_HASH`. Put the Studio l
 The Studio login limiter is an in-memory cap of five attempts per ten minutes **per application instance**, not a global cap. Login ignores `X-Forwarded-For` until the actual ingress is verified, so requests share one unknown-address bucket per instance. This code does not claim active production protection while the public route is unverified.
 
 Nothing in this repository deploys the site, promotes a deployment, or changes DNS, Hostinger or the CDN.
+
+## Administrator notes
+
+Set these on the Vercel project for Preview and Production. Leave them blank in git. None of them use a `NEXT_PUBLIC_` prefix. If a value is missing, that feature stays off and the rest of the site still serves.
+
+| Name | What it does when set | What happens when it is missing |
+| --- | --- | --- |
+| `STUDIO_EMAIL` | The one Studio login address | Studio login returns 503 |
+| `STUDIO_PASSWORD_HASH` | The scrypt hash for that login | Studio login returns 503 |
+| `STUDIO_SESSION_SECRET` | Signs the `studio_session` cookie | Studio login returns 503 |
+| `SUPABASE_URL` | Project URL for server reads and writes | Scorecard, Prompt OS registration and Studio storage stay off |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only key for those writes | The same storage features stay off. Article editing in the browser can still be opened, and a save says storage is not configured |
+| `XAI_API_KEY` | Lets Studio call xAI | Generation returns 503. The editor can still save |
+| `XAI_MODEL` | Names the model. The code does not choose one | Generation returns 503. The editor can still save |
+| `CRON_SECRET` | Authorises `GET /api/studio/cron/publish/` | A saved schedule is stored and the screen says it will not run. The route returns 503 |
+
+`STUDIO_EMAIL`, `STUDIO_PASSWORD_HASH` and `STUDIO_SESSION_SECRET` are all required together. Generate the password hash on your own machine. The script prints the hash and does not write it to disk:
+
+```bash
+npm run studio:hash -- "your password"
+```
+
+Copy the printed `scrypt$...` line into `STUDIO_PASSWORD_HASH`. Put the Studio login email in `STUDIO_EMAIL`. Do not commit either value.
+
+The session cookie is `httpOnly` and `SameSite=Lax`. Studio writes are same-origin JSON posts. That is the cross-site control. There is no separate CSRF token.
+
+`CRON_SECRET` is unset. This repository does not register a Vercel cron, because a `crons` entry in `vercel.json` stopped a preview before the build started. When Keegan is ready, set `CRON_SECRET` on Vercel and add a cron there for `GET /api/studio/cron/publish/` with `Authorization: Bearer <CRON_SECRET>`. Until then, scheduled articles stay scheduled.
+
+Generation never publishes an article. The July drafts in `content/insights.ts` stay `published: false`.
+
+Core Web Vitals were not measured in this pass. Do not treat a successful build as a Core Web Vitals result.

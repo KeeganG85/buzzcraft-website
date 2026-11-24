@@ -104,6 +104,10 @@ body {
   .mascot-idle {
     animation: none;
   }
+
+  .studio-editor .ProseMirror {
+    scroll-behavior: auto;
+  }
 }
 
 .studio-editor .ProseMirror h2 {

@@ -70,11 +70,11 @@ export function GenerateForm() {
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Notes</span>
-        <textarea className="mt-2 w-full rounded-lg border border-white/15 bg-ink px-3 py-2" rows={4} value={notes} onChange={(event) => setNotes(event.target.value)} />
+        <textarea className="mt-2 min-h-11 w-full rounded-lg border border-white/15 bg-ink px-3 py-2" rows={4} value={notes} onChange={(event) => setNotes(event.target.value)} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Reference URLs, one per line</span>
-        <textarea className="mt-2 w-full rounded-lg border border-white/15 bg-ink px-3 py-2" rows={3} value={urls} onChange={(event) => setUrls(event.target.value)} />
+        <textarea className="mt-2 min-h-11 w-full rounded-lg border border-white/15 bg-ink px-3 py-2" rows={3} value={urls} onChange={(event) => setUrls(event.target.value)} />
       </label>
       <div className="flex flex-wrap gap-2">
         {actions.map(([action, label]) => (

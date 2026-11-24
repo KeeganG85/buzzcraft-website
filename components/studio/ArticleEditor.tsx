@@ -648,6 +648,8 @@ export function ArticleEditor({
             key={id}
             type="button"
             role="tab"
+            id={`studio-tab-${id}`}
+            aria-controls={`studio-panel-${id}`}
             aria-selected={tab === id}
             className={`min-h-11 flex-1 rounded-full border px-3 text-sm ${tab === id ? "border-gold text-gold" : "border-white/15 text-soft"}`}
             onClick={() => setTab(id)}
@@ -657,9 +659,15 @@ export function ArticleEditor({
         ))}
       </div>
       <div className="md:grid md:grid-cols-[14rem_minmax(0,1fr)_20rem] md:items-start md:gap-6">
-        <aside className={`${tab === "outline" ? "block" : "hidden"} md:block`}>{outlinePanel}</aside>
-        <div className={`${tab === "write" ? "block" : "hidden"} md:block`}>{editorPanel}</div>
-        <aside className={`${tab === "publish" ? "block" : "hidden"} md:block`}>{publishPanel}</aside>
+        <aside id="studio-panel-outline" aria-labelledby="studio-tab-outline" className={`${tab === "outline" ? "block" : "hidden"} md:block`}>
+          {outlinePanel}
+        </aside>
+        <div id="studio-panel-write" aria-labelledby="studio-tab-write" className={`${tab === "write" ? "block" : "hidden"} md:block`}>
+          {editorPanel}
+        </div>
+        <aside id="studio-panel-publish" aria-labelledby="studio-tab-publish" className={`${tab === "publish" ? "block" : "hidden"} md:block`}>
+          {publishPanel}
+        </aside>
       </div>
     </div>
   );

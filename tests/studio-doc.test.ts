@@ -69,5 +69,12 @@ describe("TipTap imports", () => {
     };
     for (const root of roots) walk(path.join(process.cwd(), root));
     expect(offenders).toEqual(["components/studio/ArticleEditor.tsx"]);
+    const articlePage = fs.readFileSync(path.join(process.cwd(), "app/insights/[slug]/page.tsx"), "utf8");
+    expect(articlePage).not.toContain("ArticleEditor");
+    expect(articlePage).not.toContain("EditorLoader");
+    expect(articlePage).not.toContain("@tiptap/");
+    const loader = fs.readFileSync(path.join(process.cwd(), "components/studio/EditorLoader.tsx"), "utf8");
+    expect(loader).toContain("next/dynamic");
+    expect(loader).toContain("ssr: false");
   });
 });

@@ -53,6 +53,7 @@ export type ArticleVersionSnapshot = {
   article_id: string;
   approval_status: "draft" | "approved";
   content_json: Record<string, unknown>;
+  content_html?: string;
 };
 
 const articleTextKeys = [

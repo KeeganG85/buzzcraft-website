@@ -71,10 +71,12 @@ export async function getWorkingArticle(id: string): Promise<WorkingArticle | nu
   return { ...working, doc };
 }
 
+export type PublishedArticle = ArticleRecord & { content_html?: string };
+
 export type PublishedArticleLookup =
   | { state: "error"; articles: [] }
   | { state: "no-version"; articles: [] }
-  | { state: "version"; articles: ArticleRecord[] };
+  | { state: "version"; articles: PublishedArticle[] };
 
 /** Public reads require the approved version named by the article row. */
 export async function lookupPublishedArticles(): Promise<PublishedArticleLookup> {
@@ -88,14 +90,14 @@ export async function lookupPublishedArticles(): Promise<PublishedArticleLookup>
       .filter((id): id is string => typeof id === "string" && isUuid(id));
     if (ids.length === 0) return { state: "no-version", articles: [] };
     const versions = await rest<ArticleVersionSnapshot[]>(
-      `article_versions?id=in.(${ids.join(",")})&approval_status=eq.approved&select=id,article_id,approval_status,content_json`,
+      `article_versions?id=in.(${ids.join(",")})&approval_status=eq.approved&select=id,article_id,approval_status,content_json,content_html`,
     );
     if (!versions) return { state: "error", articles: [] };
     const byId = new Map(versions.map((version) => [version.id, version]));
     const articles = rows.flatMap((row) => {
       const version = row.published_version_id ? byId.get(row.published_version_id) ?? null : null;
       const published = articleFromPublishedVersion(row, version);
-      return published ? [published] : [];
+      return published ? [{ ...published, content_html: version?.content_html ?? "" }] : [];
     });
     return articles.length > 0
       ? { state: "version", articles }
@@ -105,9 +107,26 @@ export async function lookupPublishedArticles(): Promise<PublishedArticleLookup>
   }
 }
 
-export async function listPublishedArticles(): Promise<ArticleRecord[]> {
+export async function listPublishedArticles(): Promise<PublishedArticle[]> {
   const result = await lookupPublishedArticles();
   return result.state === "version" ? result.articles : [];
+}
+
+export async function findPublishedSlugRedirect(slug: string): Promise<string | null> {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return null;
+  const versions = await rest<{ article_id: string }[]>(
+    `article_versions?approval_status=eq.approved&metadata_json->>slug=eq.${encodeURIComponent(slug)}&select=article_id&limit=5`,
+  );
+  if (!versions) return null;
+  for (const version of versions) {
+    if (!isUuid(version.article_id)) continue;
+    const rows = await rest<{ slug: string; status: string }[]>(
+      `studio_articles?id=eq.${version.article_id}&status=eq.published&select=slug,status&limit=1`,
+    );
+    const row = rows?.[0];
+    if (row?.status === "published" && row.slug && row.slug !== slug) return row.slug;
+  }
+  return null;
 }
 
 export async function saveDraftVersion(article: ArticleRecord, doc: ProseNode): Promise<boolean> {

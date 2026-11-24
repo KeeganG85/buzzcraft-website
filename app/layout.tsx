@@ -10,6 +10,7 @@ import {
   serializeJsonLd,
   webSiteJsonLd,
 } from "@/lib/jsonld";
+import { deploymentRobots } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 
 const dmSans = localFont({
@@ -21,6 +22,8 @@ const dmSans = localFont({
   variable: "--font-dm-sans",
 });
 
+const robots = deploymentRobots();
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
@@ -29,6 +32,7 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   applicationName: siteConfig.name,
+  ...(robots ? { robots } : {}),
   openGraph: {
     siteName: siteConfig.name,
     locale: "en_ZA",

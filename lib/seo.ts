@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/lib/site-config";
 
+/** Preview deployments must not be indexed. Production and local builds stay unchanged. */
+export function deploymentRobots(): Metadata["robots"] | undefined {
+  if (process.env.VERCEL_ENV === "preview") return { index: false, follow: false };
+  return undefined;
+}
+
 /**
  * Preferred host is https://www.buzzcraft.co.za.
  * One trailing-slash policy: directory routes end with a slash, matching the

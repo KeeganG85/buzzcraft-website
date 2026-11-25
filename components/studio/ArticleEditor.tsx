@@ -7,7 +7,8 @@ import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table
 import { Markdown } from "@tiptap/markdown";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { slugifyTitle, type ArticleRecord } from "@/lib/studio";
+import type { ArticleRecord } from "@/lib/studio";
+import { slugifyTitle } from "@/lib/studio-slug";
 import { publishChecklist } from "@/lib/studio-checklist";
 import { readingMinutes, wordCount, type ProseNode } from "@/lib/studio-doc";
 import { SerialTaskQueue } from "@/lib/studio-save";

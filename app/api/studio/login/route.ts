@@ -5,7 +5,7 @@ import { signStudioSession, studioCookie, studioConfigured, verifyStudioPassword
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  if (loginRateLimiter.limited(requestIp(request))) {
+  if (loginRateLimiter.limited(requestIp(request, { trustForwardedFor: false }))) {
     return NextResponse.json(
       { ok: false, error: "Too many attempts. Please try again shortly." },
       { status: 429 },

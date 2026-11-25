@@ -136,6 +136,7 @@ describe("studio login rate limit", () => {
       headers: { "x-forwarded-for": "203.0.113.10, 198.51.100.2" },
     });
     expect(requestIp(request)).toBe("203.0.113.10");
+    expect(requestIp(request, { trustForwardedFor: false })).toBe("unknown");
     expect(requestIp(new Request("https://www.buzzcraft.co.za/api/studio/login/"))).toBe("unknown");
   });
 });

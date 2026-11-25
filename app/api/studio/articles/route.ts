@@ -49,11 +49,17 @@ export async function POST(request: Request) {
     if (!canPublish(article, otherSlugs)) {
       return NextResponse.json({ ok: false, issues }, { status: 422 });
     }
-    article.status = "published";
     if (!article.publish_date) article.publish_date = new Date().toISOString().slice(0, 10);
   }
-  const { id, ...fields } = article;
-  const saved = id ? await updateArticle(id, fields) : await saveArticle(fields);
+  const id = article.id;
+  const fields: Partial<ArticleRecord> & { slug: string } = { ...article };
+  delete fields.id;
+  delete fields.status;
+  // Keep the existing workflow state intact until the publication transaction
+  // succeeds. A new row remains a draft if publication fails.
+  const saved = id
+    ? await updateArticle(id, fields)
+    : await saveArticle({ ...fields, status: "draft" });
   if (!saved) {
     return NextResponse.json(
       { ok: false, error: "Article storage is not configured, so nothing was published." },
@@ -64,7 +70,6 @@ export async function POST(request: Request) {
 
   const published = await recordPublishedVersion(saved);
   if (!published) {
-    if (!saved.published_version_id) await updateArticle(saved.id, { status: "draft" });
     return NextResponse.json(
       { ok: false, error: "The article was not published because the approved version could not be stored." },
       { status: 503 },

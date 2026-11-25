@@ -5,7 +5,7 @@ import {
   canPublish,
   publishChecklist,
   rowPatchForSave,
-  slugifyTitle,
+  uniqueSlugFromTitle,
   studioSession,
   type ArticleRecord,
   type ArticleStatus,
@@ -64,8 +64,8 @@ export async function POST(request: Request) {
   }
   const rows = existingRows ?? [];
   const current = rows.find((item) => item.id === article.id) ?? null;
-  if (!article.slug) article.slug = current?.slug || slugifyTitle(article.title);
   const otherSlugs = rows.filter((item) => item.id !== article.id).map((item) => item.slug);
+  if (!article.slug) article.slug = current?.slug || uniqueSlugFromTitle(article.title, otherSlugs);
   const publishing = body.intent === "publish";
   const plan = articleSavePlan(current?.status ?? null, publishing ? "publish" : "save", null);
   article.status = plan.status;
@@ -79,6 +79,9 @@ export async function POST(request: Request) {
   }
 
   const patch = rowPatchForSave(article, plan.updateRowContent);
+  // The RPC is the only operation that may advance publication state. Keep an
+  // existing status (or a new article as draft) if the RPC fails.
+  if (publishing) patch.status = current?.status ?? "draft";
   const saved = article.id
     ? await updateArticle(article.id, patch)
     : await saveArticle({ ...patch, slug: article.slug });
@@ -100,7 +103,7 @@ export async function POST(request: Request) {
     const drafted = await saveDraftVersion(stored, doc);
     if (!drafted) {
       return NextResponse.json(
-        { ok: false, error: "The draft version could not be stored. The live article was left as it was." },
+        { ok: false, article: { id: stored.id }, error: "The draft version could not be stored. The live article was left as it was." },
         { status: 503 },
       );
     }
@@ -109,9 +112,8 @@ export async function POST(request: Request) {
 
   const published = await recordPublishedVersion(stored, doc);
   if (!published) {
-    if (!saved.published_version_id) await updateArticle(saved.id, { status: "draft" });
     return NextResponse.json(
-      { ok: false, error: "The article was not published because the approved version could not be stored." },
+      { ok: false, article: { id: stored.id }, error: "The article was not published because the approved version could not be stored." },
       { status: 503 },
     );
   }

@@ -7,10 +7,12 @@ import {
   articleSavePlan,
   articleStatuses,
   articleWithDraftContent,
+  articlesWithNewestDraftTitles,
   canPublish,
   publishChecklist,
   rowPatchForSave,
   studioRobots,
+  uniqueSlugFromTitle,
   type ArticleRecord,
   type ArticleVersionSnapshot,
 } from "@/lib/studio";
@@ -204,6 +206,22 @@ describe("draft saves", () => {
         { status: "archived" },
       ]),
     ).toEqual({ stored: 6, draft: 2, review: 1, scheduled: 1, published: 1 });
+  });
+
+  it("chooses the newest non-empty draft title for the dashboard", () => {
+    const rows = [article({ id: "a", title: "Stored title" }), article({ id: "b", title: "Other" })];
+    const result = articlesWithNewestDraftTitles(rows, [
+      { article_id: "a", version_number: 4, content_json: { title: "Latest draft" } },
+      { article_id: "a", version_number: 2, content_json: { title: "Older draft" } },
+      { article_id: "b", version_number: 5, content_json: { title: "   " } },
+    ]);
+    expect(result.map((row) => row.title)).toEqual(["Latest draft", "Other"]);
+  });
+
+  it("creates unique non-empty slugs from titles", () => {
+    expect(uniqueSlugFromTitle("Café Growth!", [])).toBe("cafe-growth");
+    expect(uniqueSlugFromTitle("Café Growth!", ["cafe-growth", "cafe-growth-2"])).toBe("cafe-growth-3");
+    expect(uniqueSlugFromTitle("", ["draft"])).toBe("draft-2");
   });
 });
 

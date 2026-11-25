@@ -258,6 +258,25 @@ export function articleCounts(articles: { status: string }[]): {
   };
 }
 
+export function articlesWithNewestDraftTitles<T extends { id: string; title: string }>(
+  rows: T[],
+  drafts: { article_id: string; version_number: number; content_json: Record<string, unknown> }[],
+): T[] {
+  const newest = new Map<string, { version: number; title: string }>();
+  for (const draft of drafts) {
+    const title = draft.content_json.title;
+    if (typeof title !== "string" || !title.trim()) continue;
+    const current = newest.get(draft.article_id);
+    if (!current || draft.version_number > current.version) {
+      newest.set(draft.article_id, { version: draft.version_number, title });
+    }
+  }
+  return rows.map((row) => {
+    const title = newest.get(row.id)?.title;
+    return title ? { ...row, title } : row;
+  });
+}
+
 export function slugifyTitle(value: string): string {
   const slug = value
     .toLowerCase()
@@ -267,6 +286,17 @@ export function slugifyTitle(value: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
   return slug || "draft";
+}
+
+export function uniqueSlugFromTitle(title: string, existingSlugs: string[]): string {
+  const base = slugifyTitle(title);
+  const used = new Set(existingSlugs.map((slug) => slug.toLowerCase()));
+  if (!used.has(base)) return base;
+  for (let suffix = 2; ; suffix += 1) {
+    const ending = `-${suffix}`;
+    const candidate = `${base.slice(0, 80 - ending.length).replace(/-+$/, "")}${ending}`;
+    if (!used.has(candidate)) return candidate;
+  }
 }
 
 const rowContentKeys = [

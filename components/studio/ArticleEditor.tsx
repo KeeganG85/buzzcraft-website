@@ -6,9 +6,11 @@ import { Placeholder } from "@tiptap/extension-placeholder";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import { Markdown } from "@tiptap/markdown";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ArticleRecord } from "@/lib/studio";
+import { useRouter } from "next/navigation";
+import { slugifyTitle, type ArticleRecord } from "@/lib/studio";
 import { publishChecklist } from "@/lib/studio-checklist";
 import { readingMinutes, wordCount, type ProseNode } from "@/lib/studio-doc";
+import { SerialTaskQueue } from "@/lib/studio-save";
 import { buttonClass } from "@/components/ui/primitives";
 
 type OutlineItem = { level: number; text: string; pos: number };
@@ -51,6 +53,7 @@ function ToolButton({
 }
 
 export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & { doc?: ProseNode } }) {
+  const router = useRouter();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [h1, setH1] = useState(initial?.h1 ?? "");
   const [slug, setSlug] = useState(initial?.slug ?? "");
@@ -70,6 +73,7 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
   const [sourceNote, setSourceNote] = useState(initial?.source_note ?? "");
   const [claimsChecked, setClaimsChecked] = useState(initial?.claims_checked === true);
   const [text, setText] = useState(initial?.body ?? "");
+  const [revision, setRevision] = useState(0);
   const [outline, setOutline] = useState<OutlineItem[]>([]);
   const [tab, setTab] = useState<"outline" | "write" | "publish">("write");
   const [issues, setIssues] = useState<string[]>([]);
@@ -78,8 +82,17 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
   const [linkHref, setLinkHref] = useState("");
   const [markdown, setMarkdown] = useState("");
   const articleId = useRef(initial?.id ?? "");
-  const dirty = useRef(false);
-  const saving = useRef(false);
+  const changeCount = useRef(0);
+  const savedChangeCount = useRef(0);
+  const pendingSaves = useRef(0);
+  const redirected = useRef(false);
+  const saveQueue = useRef(new SerialTaskQueue());
+  const flushRef = useRef<() => Promise<boolean>>(async () => true);
+
+  function markChanged() {
+    changeCount.current += 1;
+    setRevision(changeCount.current);
+  }
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -107,7 +120,7 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
       setOutline(readOutline(current));
     },
     onUpdate: ({ editor: current }) => {
-      dirty.current = true;
+      markChanged();
       setText(current.getText({ blockSeparator: "\n\n" }));
       setOutline(readOutline(current));
     },
@@ -161,64 +174,128 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
     ],
   );
 
-  async function send(intent: "save" | "publish") {
-    if (!editor || saving.current) return;
-    saving.current = true;
-    setIssues([]);
-    if (intent === "publish") setStatusText("Publishing");
-    else setStatusText("Saving draft");
-    const doc = editor.getJSON() as ProseNode;
-    const res = await fetch("/api/studio/articles/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...payload,
-        id: articleId.current,
-        intent,
-        doc,
-        body: editor.getText({ blockSeparator: "\n\n" }),
-      }),
+  function takeSnapshot() {
+    if (!editor) return null;
+    return {
+      change: changeCount.current,
+      payload: { ...payload, id: articleId.current },
+      doc: editor.getJSON() as ProseNode,
+      body: editor.getText({ blockSeparator: "\n\n" }),
+    };
+  }
+
+  function queueSave(intent: "save" | "publish", snapshot = takeSnapshot()): Promise<boolean> {
+    if (!snapshot) return Promise.resolve(false);
+    pendingSaves.current += 1;
+    return saveQueue.current.enqueue(async () => {
+      setIssues([]);
+      setStatusText(intent === "publish" ? "Publishing" : "Saving draft");
+      try {
+        const res = await fetch("/api/studio/articles/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...snapshot.payload, id: articleId.current || snapshot.payload.id, intent, doc: snapshot.doc, body: snapshot.body }),
+        });
+        const body = (await res.json()) as {
+          ok?: boolean;
+          error?: string;
+          issues?: string[];
+          article?: { id: string };
+        };
+        if (body.article?.id && !articleId.current) articleId.current = body.article.id;
+        if (body.issues) setIssues(body.issues);
+        if (!res.ok || !body.ok) {
+          setStatusText(body.error || "Could not save the draft.");
+          return false;
+        }
+        savedChangeCount.current = Math.max(savedChangeCount.current, snapshot.change);
+        if (
+          body.article?.id &&
+          !initial?.id &&
+          !redirected.current &&
+          changeCount.current === snapshot.change
+        ) {
+          redirected.current = true;
+          router.replace(`/studio/articles/${body.article.id}/`);
+          return true;
+        }
+        setStatusText(
+          changeCount.current > snapshot.change
+            ? "Saved this snapshot. Newer edits are still unsaved."
+            : intent === "publish"
+              ? "Published."
+              : initial?.status === "published"
+                ? "Draft saved. The live article is unchanged."
+                : "Draft saved.",
+        );
+        return true;
+      } catch {
+        setStatusText(intent === "publish" ? "Could not publish. Your edits are still unsaved." : "Could not save the draft.");
+        return false;
+      } finally {
+        pendingSaves.current -= 1;
+      }
     });
-    const body = (await res.json()) as { ok?: boolean; error?: string; issues?: string[]; article?: { id: string } };
-    saving.current = false;
-    if (body.issues) setIssues(body.issues);
-    if (!res.ok || !body.ok) {
-      setStatusText(body.error || "Could not save the draft.");
-      return;
-    }
-    dirty.current = false;
-    if (body.article?.id && !articleId.current) {
-      window.location.assign(`/studio/articles/${body.article.id}/`);
-      return;
-    }
-    setStatusText(
-      intent === "publish"
-        ? "Published."
-        : initial?.status === "published"
-          ? "Draft saved. The live article is unchanged."
-          : "Draft saved.",
-    );
+  }
+
+  async function send(intent: "save" | "publish") {
+    return queueSave(intent);
   }
 
   const sendRef = useRef(send);
   sendRef.current = send;
+  flushRef.current = async () => {
+    for (;;) {
+      await saveQueue.current.idle();
+      if (changeCount.current <= savedChangeCount.current) return true;
+      const success = await queueSave("save", takeSnapshot());
+      if (!success) return false;
+    }
+  };
 
   useEffect(() => {
     if (!editor) return;
     const timer = window.setTimeout(() => {
-      if (!dirty.current || saving.current) return;
+      if (changeCount.current <= savedChangeCount.current) return;
       if (!articleId.current && !title.trim() && wordCount(text) === 0) return;
       void sendRef.current("save");
     }, 1500);
     return () => window.clearTimeout(timer);
-  }, [editor, payload, text, title]);
+  }, [editor, payload, revision, text, title]);
+
+  useEffect(() => {
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (changeCount.current <= savedChangeCount.current && pendingSaves.current === 0) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", beforeUnload);
+    return () => window.removeEventListener("beforeunload", beforeUnload);
+  }, []);
+
+  useEffect(() => {
+    const interceptNavigation = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const target = event.target instanceof Element ? event.target.closest("a[href]") : null;
+      if (!(target instanceof HTMLAnchorElement) || target.target && target.target !== "_self") return;
+      const destination = new URL(target.href, window.location.href);
+      if (destination.origin !== window.location.origin || destination.href === window.location.href) return;
+      event.preventDefault();
+      const href = `${destination.pathname}${destination.search}${destination.hash}`;
+      void flushRef.current().then((saved) => {
+        if (saved) router.push(href);
+      });
+    };
+    document.addEventListener("click", interceptNavigation, true);
+    return () => document.removeEventListener("click", interceptNavigation, true);
+  }, [router]);
 
   const checklist = publishChecklist(
     {
       id: articleId.current,
       title,
       h1,
-      slug,
+      slug: slug || slugifyTitle(title),
       excerpt,
       author,
       category,
@@ -284,71 +361,71 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
       ) : null}
       <label className="block text-sm">
         <span className="font-semibold">Title</span>
-        <input className={fieldClass} value={title} onChange={(event) => { dirty.current = true; setTitle(event.target.value); }} />
+        <input className={fieldClass} value={title} onChange={(event) => { markChanged(); setTitle(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">H1</span>
-        <input className={fieldClass} value={h1} onChange={(event) => { dirty.current = true; setH1(event.target.value); }} />
+        <input className={fieldClass} value={h1} onChange={(event) => { markChanged(); setH1(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Slug</span>
-        <input className={fieldClass} value={slug} onChange={(event) => { dirty.current = true; setSlug(event.target.value); }} />
+        <input className={fieldClass} value={slug || (title.trim() ? slugifyTitle(title) : "")} onChange={(event) => { markChanged(); setSlug(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Excerpt</span>
-        <textarea className={`${fieldClass} py-2`} rows={3} value={excerpt} onChange={(event) => { dirty.current = true; setExcerpt(event.target.value); }} />
+        <textarea className={`${fieldClass} py-2`} rows={3} value={excerpt} onChange={(event) => { markChanged(); setExcerpt(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Author</span>
-        <input className={fieldClass} value={author} onChange={(event) => { dirty.current = true; setAuthor(event.target.value); }} />
+        <input className={fieldClass} value={author} onChange={(event) => { markChanged(); setAuthor(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Category</span>
-        <input className={fieldClass} value={category} onChange={(event) => { dirty.current = true; setCategory(event.target.value); }} />
+        <input className={fieldClass} value={category} onChange={(event) => { markChanged(); setCategory(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Tags, comma separated</span>
-        <input className={fieldClass} value={tags} onChange={(event) => { dirty.current = true; setTags(event.target.value); }} />
+        <input className={fieldClass} value={tags} onChange={(event) => { markChanged(); setTags(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Hero image path</span>
-        <input className={fieldClass} value={heroImage} onChange={(event) => { dirty.current = true; setHeroImage(event.target.value); }} />
+        <input className={fieldClass} value={heroImage} onChange={(event) => { markChanged(); setHeroImage(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Hero alt text</span>
-        <input className={fieldClass} value={heroAlt} onChange={(event) => { dirty.current = true; setHeroAlt(event.target.value); }} />
+        <input className={fieldClass} value={heroAlt} onChange={(event) => { markChanged(); setHeroAlt(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Publish date</span>
-        <input className={fieldClass} value={publishDate} onChange={(event) => { dirty.current = true; setPublishDate(event.target.value); }} />
+        <input className={fieldClass} value={publishDate} onChange={(event) => { markChanged(); setPublishDate(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">SEO title</span>
-        <input className={fieldClass} value={seoTitle} onChange={(event) => { dirty.current = true; setSeoTitle(event.target.value); }} />
+        <input className={fieldClass} value={seoTitle} onChange={(event) => { markChanged(); setSeoTitle(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Meta description</span>
-        <textarea className={`${fieldClass} py-2`} rows={3} value={metaDescription} onChange={(event) => { dirty.current = true; setMetaDescription(event.target.value); }} />
+        <textarea className={`${fieldClass} py-2`} rows={3} value={metaDescription} onChange={(event) => { markChanged(); setMetaDescription(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Canonical URL</span>
-        <input className={fieldClass} value={canonical} onChange={(event) => { dirty.current = true; setCanonical(event.target.value); }} />
+        <input className={fieldClass} value={canonical} onChange={(event) => { markChanged(); setCanonical(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Open Graph title</span>
-        <input className={fieldClass} value={ogTitle} onChange={(event) => { dirty.current = true; setOgTitle(event.target.value); }} />
+        <input className={fieldClass} value={ogTitle} onChange={(event) => { markChanged(); setOgTitle(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Open Graph description</span>
-        <textarea className={`${fieldClass} py-2`} rows={3} value={ogDescription} onChange={(event) => { dirty.current = true; setOgDescription(event.target.value); }} />
+        <textarea className={`${fieldClass} py-2`} rows={3} value={ogDescription} onChange={(event) => { markChanged(); setOgDescription(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Focus phrase (guidance only)</span>
-        <input className={fieldClass} value={focusPhrase} onChange={(event) => { dirty.current = true; setFocusPhrase(event.target.value); }} />
+        <input className={fieldClass} value={focusPhrase} onChange={(event) => { markChanged(); setFocusPhrase(event.target.value); }} />
       </label>
       <label className="block text-sm">
         <span className="font-semibold">Source note</span>
-        <textarea className={`${fieldClass} py-2`} rows={4} value={sourceNote} onChange={(event) => { dirty.current = true; setSourceNote(event.target.value); }} />
+        <textarea className={`${fieldClass} py-2`} rows={4} value={sourceNote} onChange={(event) => { markChanged(); setSourceNote(event.target.value); }} />
       </label>
       <label className="flex items-start gap-3 text-sm leading-6">
         <input
@@ -356,7 +433,7 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
           className="mt-1"
           checked={claimsChecked}
           onChange={(event) => {
-            dirty.current = true;
+            markChanged();
             setClaimsChecked(event.target.checked);
           }}
         />
@@ -452,7 +529,7 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
               type="button"
               className={buttonClass("secondary")}
               onClick={() => {
-                dirty.current = true;
+                markChanged();
                 editor?.commands.setContent(markdown, { contentType: "markdown" });
               }}
             >

@@ -443,8 +443,10 @@ export function ArticleEditor({
           className={fieldClass}
           value={brandAssets.some((asset) => asset.path === heroImage) ? heroImage : ""}
           onChange={(event) => {
-            dirty.current = true;
-            if (event.target.value) setHeroImage(event.target.value);
+            if (event.target.value) {
+              markChanged();
+              setHeroImage(event.target.value);
+            }
           }}
         >
           <option value="">Choose a brand file</option>

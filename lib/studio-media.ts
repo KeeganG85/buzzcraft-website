@@ -11,8 +11,8 @@ export const brandAssets = [
 ] as const;
 
 export type InspectedImage = {
-  mime: "image/jpeg" | "image/png" | "image/webp" | "image/avif" | "image/svg+xml";
-  extension: "jpg" | "png" | "webp" | "avif" | "svg";
+  mime: "image/jpeg" | "image/png" | "image/webp" | "image/avif";
+  extension: "jpg" | "png" | "webp" | "avif";
   width: number | null;
   height: number | null;
   bytes: Buffer;
@@ -34,12 +34,13 @@ export function inspectImage(input: Buffer): InspectedImage | null {
   if (webp) return { mime: "image/webp", extension: "webp", ...webp, bytes: input };
   const avif = readAvif(input);
   if (avif) return { mime: "image/avif", extension: "avif", ...avif, bytes: input };
-  const svg = sanitizeSvg(input.toString("utf8"));
-  if (svg) {
-    const bytes = Buffer.from(svg.svg);
-    return { mime: "image/svg+xml", extension: "svg", width: svg.width, height: svg.height, bytes };
-  }
   return null;
+}
+
+/** Reject SVG declarations independently of the file's actual bytes. */
+export function isSvgUpload(fileName: string, mimeType: string): boolean {
+  return mimeType.split(";", 1)[0].trim().toLowerCase() === "image/svg+xml" ||
+    fileName.trim().toLowerCase().endsWith(".svg");
 }
 
 function readPng(input: Buffer): { width: number | null; height: number | null } | null {
@@ -87,34 +88,6 @@ function readAvif(input: Buffer): { width: number | null; height: number | null 
   const brand = input.toString("ascii", 8, 12);
   if (brand !== "avif" && brand !== "avis") return null;
   return { width: null, height: null };
-}
-
-export function sanitizeSvg(source: string): { svg: string; width: number | null; height: number | null } | null {
-  const svg = source.replace(/^\uFEFF/, "").replace(/<\?xml[\s\S]*?\?>/gi, "").trim();
-  if (!/^<svg[\s>]/i.test(svg) || !/<\/svg>\s*$/i.test(svg)) return null;
-  if (/<!entity|<!doctype|<\s*script|<\s*foreignobject|<\s*iframe|<\s*embed|<\s*object|javascript:|data:|on[a-z]+\s*=/i.test(svg)) {
-    return null;
-  }
-  const width = numberAttr(svg, "width");
-  const height = numberAttr(svg, "height");
-  const viewBox = svg.match(/viewBox\s*=\s*["']([^"']+)["']/i)?.[1];
-  let boxWidth = width;
-  let boxHeight = height;
-  if (viewBox) {
-    const parts = viewBox.trim().split(/[\s,]+/).map(Number);
-    if (parts.length === 4 && parts.every((part) => Number.isFinite(part))) {
-      boxWidth = boxWidth ?? Math.round(parts[2]);
-      boxHeight = boxHeight ?? Math.round(parts[3]);
-    }
-  }
-  return { svg, width: boxWidth, height: boxHeight };
-}
-
-function numberAttr(svg: string, name: string): number | null {
-  const match = svg.match(new RegExp(`${name}\\s*=\\s*["']([0-9.]+)`, "i"));
-  if (!match) return null;
-  const value = Number(match[1]);
-  return Number.isFinite(value) ? Math.round(value) : null;
 }
 
 export function assetInUse(path: string, fields: string[]): boolean {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { insights } from "@/content/insights";
 import { cronAuthorised, cronConfigured, dueScheduled, scheduleRowPatch } from "@/lib/studio-schedule";
 import { johannesburgInputToUtc, utcToJohannesburgInput } from "@/lib/studio-time";
-import { assetInUse, countAssetUse, inspectImage, sanitizeSvg } from "@/lib/studio-media";
+import { assetInUse, countAssetUse, inspectImage, isSvgUpload } from "@/lib/studio-media";
 
 describe("schedule", () => {
   it("stores Johannesburg time as UTC", () => {
@@ -37,7 +37,7 @@ describe("schedule", () => {
 });
 
 describe("media checks", () => {
-  it("reads a PNG and rejects a dangerous SVG", () => {
+  it("reads supported raster images and rejects SVG declarations and content", () => {
     const png = Buffer.from(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
       "base64",
@@ -47,8 +47,24 @@ describe("media checks", () => {
     expect(image?.width).toBe(1);
     expect(image?.height).toBe(1);
     expect(inspectImage(Buffer.from("not an image"))).toBeNull();
-    expect(sanitizeSvg('<svg width="10" height="20"></svg>')?.width).toBe(10);
-    expect(sanitizeSvg('<svg><script>alert(1)</script></svg>')).toBeNull();
+    expect(isSvgUpload("image.svg", "image/svg+xml")).toBe(true);
+    expect(isSvgUpload("image.SVG", "image/png")).toBe(true);
+    expect(isSvgUpload("image.png", "image/svg+xml; charset=utf-8")).toBe(true);
+    expect(isSvgUpload("image.png", "image/png")).toBe(false);
+    expect(inspectImage(Buffer.from('<svg width="10" height="20"></svg>'))).toBeNull();
+    expect(inspectImage(Buffer.from('<svg><script>alert(1)</script></svg>'))).toBeNull();
+
+    const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x07, 0x08, 0x00, 0x01, 0x00, 0x01, 0x00]);
+    expect(inspectImage(jpeg)?.mime).toBe("image/jpeg");
+    const webp = Buffer.alloc(30);
+    webp.write("RIFF", 0, "ascii");
+    webp.write("WEBP", 8, "ascii");
+    webp.write("VP8X", 12, "ascii");
+    expect(inspectImage(webp)?.mime).toBe("image/webp");
+    const avif = Buffer.alloc(16);
+    avif.write("ftyp", 4, "ascii");
+    avif.write("avif", 8, "ascii");
+    expect(inspectImage(avif)?.mime).toBe("image/avif");
   });
 
   it("blocks deletion when an article still uses the file", () => {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { listPublishedArticles, lookupPublishedArticles, recordPublishedVersion } from "@/lib/studio-store";
+import { listPublishedArticles, lookupLatestVersion, lookupPublishedArticles, recordPublishedVersion } from "@/lib/studio-store";
 import type { ArticleRecord, ArticleVersionSnapshot } from "@/lib/studio";
 
 const articleId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -77,6 +77,43 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
+});
+
+describe("latest article version lookup", () => {
+  it("reports storage errors rather than treating them as an empty version list", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(new Error("offline"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(lookupLatestVersion(articleId)).resolves.toEqual({
+      state: "error",
+      reason: "Article version storage could not be read.",
+    });
+  });
+
+  it("distinguishes a successful empty result from a storage error", async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValueOnce(jsonResponse({ message: "unavailable" }, 503));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(lookupLatestVersion(articleId)).resolves.toEqual({ state: "no-version" });
+    await expect(lookupLatestVersion(articleId)).resolves.toMatchObject({ state: "error" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns the latest version when storage responds with a row", async () => {
+    const version = {
+      id: versionId,
+      article_id: articleId,
+      version_number: 3,
+      approval_status: "draft",
+      content_json: { title: "Draft" },
+      metadata_json: {},
+    };
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(jsonResponse([version])));
+
+    await expect(lookupLatestVersion(articleId)).resolves.toEqual({ state: "version", version });
+  });
 });
 
 describe("published version lookup", () => {

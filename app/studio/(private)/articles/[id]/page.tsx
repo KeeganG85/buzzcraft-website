@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EditorLoader } from "@/components/studio/EditorLoader";
-import { getWorkingArticle } from "@/lib/studio-store";
+import { getWorkingArticle, listArticles, listPublishedArticles } from "@/lib/studio-store";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +9,11 @@ export default async function EditArticlePage({ params }: { params: Promise<{ id
   const { id } = await params;
   const article = await getWorkingArticle(id);
   if (!article) notFound();
+  const [stored, published] = await Promise.all([listArticles(), listPublishedArticles()]);
+  const otherSlugs = (stored ?? []).filter((item) => item.id !== article.id).map((item) => item.slug);
+  const publishedArticles = published
+    .filter((item) => item.slug !== article.slug)
+    .map((item) => ({ slug: item.slug, title: item.title }));
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
@@ -22,7 +27,7 @@ export default async function EditArticlePage({ params }: { params: Promise<{ id
         </Link>
       </div>
       <div className="mt-8">
-        <EditorLoader initial={article} />
+        <EditorLoader initial={article} publishedArticles={publishedArticles} otherSlugs={otherSlugs} />
       </div>
     </div>
   );

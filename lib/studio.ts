@@ -1,5 +1,9 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
+import { publishChecklist } from "@/lib/studio-checklist";
+
+export { publishChecklist };
+export { slugifyTitle, uniqueSlugFromTitle } from "./studio-slug";
 
 const COOKIE = "studio_session";
 
@@ -140,27 +144,171 @@ export type CaseStudyRecord = {
   status: "draft" | "published";
 };
 
-export function publishChecklist(article: ArticleRecord, otherSlugs: string[]): string[] {
-  const issues: string[] = [];
-  if (!article.title.trim() || !article.h1.trim()) issues.push("Title and H1 are required.");
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(article.slug)) {
-    issues.push("Slug must be lowercase words separated by hyphens.");
-  }
-  if (otherSlugs.includes(article.slug)) issues.push("Another article already uses this slug.");
-  if (!article.excerpt.trim()) issues.push("Excerpt is missing.");
-  if (!article.author.trim()) issues.push("Author is missing.");
-  if (!article.body.trim()) issues.push("Body is empty.");
-  if (article.hero_image.trim() && !article.hero_alt.trim()) issues.push("Hero image is missing alt text.");
-  if (!article.seo_title.trim()) issues.push("SEO title is missing.");
-  if (!article.meta_description.trim()) issues.push("Meta description is missing.");
-  if (!article.canonical.trim()) issues.push("Canonical is empty.");
-  if (!article.source_note.trim()) issues.push("Source note is missing. Add the title, URL, date and the claim it supports.");
-  if (!article.claims_checked) issues.push("Tick the box once a person has checked every factual claim.");
-  return issues;
-}
-
 export function canPublish(article: ArticleRecord, otherSlugs: string[]): boolean {
   return publishChecklist(article, otherSlugs).length === 0;
+}
+
+export type VersionPointer = {
+  id: string;
+  version_number: number;
+  approval_status: "draft" | "approved";
+};
+
+export type SavePlan = {
+  status: ArticleStatus;
+  /** Published articles keep their live columns until a person publishes again. */
+  updateRowContent: boolean;
+  writeDraftVersion: boolean;
+  version:
+    | { action: "update"; id: string }
+    | { action: "insert"; version_number: number; approval_status: "draft" | "approved" };
+};
+
+/**
+ * A save writes or updates a draft version and does not change published_version_id.
+ * Publishing is a separate step that records an approved version.
+ */
+export function articleSavePlan(
+  existingStatus: ArticleStatus | null,
+  intent: "save" | "publish",
+  latest: VersionPointer | null,
+): SavePlan {
+  if (intent === "publish") {
+    return {
+      status: "published",
+      updateRowContent: true,
+      writeDraftVersion: false,
+      version: {
+        action: "insert",
+        version_number: (latest?.version_number ?? 0) + 1,
+        approval_status: "approved",
+      },
+    };
+  }
+  const version =
+    latest?.approval_status === "draft"
+      ? { action: "update" as const, id: latest.id }
+      : {
+          action: "insert" as const,
+          version_number: (latest?.version_number ?? 0) + 1,
+          approval_status: "draft" as const,
+        };
+  return {
+    status: existingStatus ?? "draft",
+    updateRowContent: existingStatus !== "published",
+    writeDraftVersion: true,
+    version,
+  };
+}
+
+const draftTextKeys = [
+  "title",
+  "h1",
+  "excerpt",
+  "author",
+  "category",
+  "body",
+  "hero_image",
+  "hero_alt",
+  "seo_title",
+  "meta_description",
+  "canonical",
+  "og_title",
+  "og_description",
+  "focus_phrase",
+  "source_note",
+] as const;
+
+/** Working copy for the editor. Status and the public version pointer stay on the row. */
+export function articleWithDraftContent(
+  row: ArticleRecord,
+  content: Record<string, unknown> | null,
+  metadata: Record<string, unknown> | null,
+): ArticleRecord {
+  const next: ArticleRecord = { ...row };
+  if (content) {
+    for (const key of draftTextKeys) {
+      if (typeof content[key] === "string") next[key] = content[key];
+    }
+    if (Array.isArray(content.tags)) {
+      next.tags = content.tags.filter((tag): tag is string => typeof tag === "string");
+    }
+    if (typeof content.claims_checked === "boolean") next.claims_checked = content.claims_checked;
+  }
+  if (metadata && typeof metadata.slug === "string" && metadata.slug.trim()) next.slug = metadata.slug;
+  if (metadata && typeof metadata.publish_date === "string") next.publish_date = metadata.publish_date;
+  next.id = row.id;
+  next.status = row.status;
+  next.published_version_id = row.published_version_id;
+  return next;
+}
+
+export function articleCounts(articles: { status: string }[]): {
+  stored: number;
+  draft: number;
+  review: number;
+  scheduled: number;
+  published: number;
+} {
+  return {
+    stored: articles.length,
+    draft: articles.filter((item) => item.status === "draft").length,
+    review: articles.filter((item) => item.status === "in_review").length,
+    scheduled: articles.filter((item) => item.status === "scheduled").length,
+    published: articles.filter((item) => item.status === "published").length,
+  };
+}
+
+export function articlesWithNewestDraftTitles<T extends { id: string; title: string }>(
+  rows: T[],
+  drafts: { article_id: string; version_number: number; content_json: Record<string, unknown> }[],
+): T[] {
+  const newest = new Map<string, { version: number; title: string }>();
+  for (const draft of drafts) {
+    const title = draft.content_json.title;
+    if (typeof title !== "string" || !title.trim()) continue;
+    const current = newest.get(draft.article_id);
+    if (!current || draft.version_number > current.version) {
+      newest.set(draft.article_id, { version: draft.version_number, title });
+    }
+  }
+  return rows.map((row) => {
+    const title = newest.get(row.id)?.title;
+    return title ? { ...row, title } : row;
+  });
+}
+
+const rowContentKeys = [
+  "slug",
+  "title",
+  "h1",
+  "excerpt",
+  "author",
+  "category",
+  "tags",
+  "body",
+  "hero_image",
+  "hero_alt",
+  "publish_date",
+  "seo_title",
+  "meta_description",
+  "canonical",
+  "og_title",
+  "og_description",
+  "focus_phrase",
+  "source_note",
+  "claims_checked",
+  "status",
+] as const;
+
+/** Row patch for a save. Never includes published_version_id. */
+export function rowPatchForSave(article: ArticleRecord, updateRowContent: boolean): Partial<ArticleRecord> {
+  if (!updateRowContent) return {};
+  const patch: Partial<ArticleRecord> = {};
+  for (const key of rowContentKeys) {
+    patch[key] = article[key] as never;
+  }
+  return patch;
 }
 
 export function hashStudioPassword(password: string): string {

@@ -1,13 +1,14 @@
 import { notFound } from "next/navigation";
-import { getArticle } from "@/lib/studio-store";
+import { getWorkingArticle } from "@/lib/studio-store";
+import { docToHtml } from "@/lib/studio-doc";
 
 export const dynamic = "force-dynamic";
 
 export default async function PreviewArticlePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const article = await getArticle(id);
+  const article = await getWorkingArticle(id);
   if (!article) notFound();
-  const paragraphs = article.body.split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
+  const bodyHtml = docToHtml(article.doc);
 
   return (
     <article className="mx-auto max-w-3xl px-5 py-16">
@@ -18,11 +19,7 @@ export default async function PreviewArticlePage({ params }: { params: Promise<{
         // eslint-disable-next-line @next/next/no-img-element
         <img src={article.hero_image} alt={article.hero_alt} className="mt-6 max-w-full" />
       ) : null}
-      <div className="mt-8 space-y-4 leading-7">
-        {paragraphs.map((paragraph) => (
-          <p key={paragraph.slice(0, 40)}>{paragraph}</p>
-        ))}
-      </div>
+      <div className="mt-8 space-y-4 leading-7" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
       <p className="mt-8 text-sm text-mid">Source note: {article.source_note || "Missing."}</p>
     </article>
   );

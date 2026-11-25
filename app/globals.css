@@ -168,6 +168,38 @@ body {
   padding: 0.5rem;
 }
 
+.insight-body h2,
+.insight-body h3 {
+  margin-top: 1.5rem;
+  font-weight: 650;
+}
+
+.insight-body h2 {
+  font-size: 1.5rem;
+}
+
+.insight-body h3 {
+  font-size: 1.25rem;
+}
+
+.insight-body a {
+  color: var(--color-gold);
+  text-decoration: underline;
+}
+
+.insight-body ul,
+.insight-body ol {
+  padding-left: 1.25rem;
+}
+
+.insight-body ul {
+  list-style: disc;
+}
+
+.insight-body ol {
+  list-style: decimal;
+}
+
 .studio-editor .ProseMirror p.is-editor-empty:first-child::before,
 .studio-editor .ProseMirror p.is-empty:first-child::before {
   color: var(--color-mid);

@@ -1,14 +1,8 @@
 import { lookup } from "node:dns/promises";
 import { NextResponse } from "next/server";
 import { createRateLimiter, requestIp } from "@/lib/rate-limit";
+import { studioSession, type ArticleRecord } from "@/lib/studio";
 import { plainTextToDoc } from "@/lib/studio-doc";
-import {
-  articleSavePlan,
-  isUuid,
-  rowPatchForSave,
-  studioSession,
-  type ArticleRecord,
-} from "@/lib/studio";
 import {
   buildMessages,
   draftRecord,
@@ -20,17 +14,17 @@ import {
   readGenerationConfig,
   readUpstream,
   sourcesFromSearch,
+  unsupportedSearchError,
   type GenerationAction,
   type UpstreamResult,
 } from "@/lib/studio-generate";
 import { fetchPublicSource, publicHttpUrl, type SourcePage } from "@/lib/studio-source";
+import { pinnedSourceFetch } from "@/lib/studio-source-fetch";
 import {
-  getWorkingArticle,
   insertArticleSources,
   insertGenerationLog,
   saveArticle,
   saveDraftVersion,
-  updateArticle,
 } from "@/lib/studio-store";
 
 export const runtime = "nodejs";
@@ -52,38 +46,50 @@ async function lookupHost(hostname: string): Promise<string[]> {
   return records.map((record) => record.address);
 }
 
+function upstreamError(payload: unknown): unknown {
+  if (!payload || typeof payload !== "object") return null;
+  const value = payload as { error?: unknown; code?: unknown; param?: unknown; message?: unknown; type?: unknown };
+  if (value.error && typeof value.error === "object") return value.error;
+  if (typeof value.error === "string") return { message: value.error };
+  return value.code || value.message ? value : null;
+}
+
+async function sendCompletion(
+  config: { apiKey: string; model: string },
+  action: GenerationAction,
+  messages: { role: "system" | "user"; content: string }[],
+  search: boolean,
+): Promise<Response> {
+  return fetch("https://api.x.ai/v1/chat/completions", {
+    method: "POST",
+    signal: AbortSignal.timeout(45_000),
+    headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: config.model,
+      messages,
+      temperature: 0.2,
+      response_format: { type: "json_schema", json_schema: { name: `studio_${action}`, strict: true, schema: jsonSchemaFor(action) } },
+      ...(search ? { search_parameters: { mode: "auto", return_citations: true, max_search_results: 5 } } : {}),
+    }),
+  });
+}
+
 async function complete(
   config: { apiKey: string; model: string },
   action: GenerationAction,
   messages: { role: "system" | "user"; content: string }[],
   allowSearch: boolean,
 ): Promise<UpstreamResult | { errorClass: string }> {
-  const send = (search: boolean) =>
-    fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      signal: AbortSignal.timeout(45_000),
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: config.model,
-        messages,
-        temperature: 0.2,
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: `studio_${action}`, strict: true, schema: jsonSchemaFor(action) },
-        },
-        ...(search ? { search_parameters: { mode: "auto", return_citations: true, max_search_results: 5 } } : {}),
-      }),
-    });
-
   try {
-    let response = await send(allowSearch);
+    let response = await sendCompletion(config, action, messages, allowSearch);
     let searchedRequest = allowSearch;
     if (allowSearch && response.status === 400) {
-      response = await send(false);
-      searchedRequest = false;
+      let error: unknown = null;
+      try { error = upstreamError(await response.clone().json()); } catch { /* malformed upstream error */ }
+      if (unsupportedSearchError(error)) {
+        response = await sendCompletion(config, action, messages, false);
+        searchedRequest = false;
+      }
     }
     if (!response.ok) return { errorClass: `upstream_${response.status}` };
     const upstream = readUpstream(await response.json());
@@ -94,30 +100,6 @@ async function complete(
     const name = error instanceof Error ? error.name : "error";
     return { errorClass: name === "TimeoutError" || name === "AbortError" ? "timeout" : "upstream_network" };
   }
-}
-
-async function acceptRevision(body: Record<string, unknown>) {
-  const id = String(body.articleId ?? "");
-  const text = String(body.text ?? "").trim();
-  if (!isUuid(id) || !text || text.length > 20_000) {
-    return NextResponse.json({ ok: false, error: "Accept needs an article and the suggested text." }, { status: 422 });
-  }
-  const working = await getWorkingArticle(id);
-  if (!working) return NextResponse.json({ ok: false, error: "That draft was not found." }, { status: 404 });
-  const plan = articleSavePlan(working.status, "save", null);
-  const next: ArticleRecord = { ...working, body: text, status: plan.status };
-  const saved = await updateArticle(id, rowPatchForSave(next, plan.updateRowContent));
-  if (!saved) {
-    return NextResponse.json({ ok: false, error: "The suggestion was not saved. The editor can still save." }, { status: 503 });
-  }
-  const drafted = await saveDraftVersion(
-    { ...next, id, status: working.status, published_version_id: saved.published_version_id ?? working.published_version_id },
-    plainTextToDoc(text),
-  );
-  if (!drafted) {
-    return NextResponse.json({ ok: false, error: "The suggestion was not saved. The editor can still save." }, { status: 503 });
-  }
-  return NextResponse.json({ ok: true, accepted: true, articleId: id, status: working.status });
 }
 
 export async function POST(request: Request) {
@@ -139,28 +121,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Unknown generation action." }, { status: 422 });
   }
   const chosen = action as GenerationAction;
-  if (body.accept === true) return acceptRevision(body);
 
-  const config = readGenerationConfig({ apiKey: process.env.XAI_API_KEY, model: process.env.XAI_MODEL });
-  if (!config) return unavailable();
 
   const topic = String(body.topic ?? "").trim().slice(0, 500);
-  const selection = String(body.selection ?? "").trim().slice(0, 8000);
+  const rawSelection = typeof body.selection === "string" ? body.selection : "";
+  const selection = rawSelection;
   const notes = String(body.notes ?? "").trim().slice(0, 4000);
   const headline = String(body.headline ?? "").trim().slice(0, 180);
   const audience = String(body.audience ?? "").trim().slice(0, 240);
   const revising = chosen === "rewrite" || chosen === "expand" || chosen === "shorten";
-  if (revising && !selection) {
+  if (revising && rawSelection.length > 8000) {
+    return NextResponse.json({ ok: false, error: "Selected text is over the 8,000-character revision limit. Select a smaller section." }, { status: 422 });
+  }
+  if (revising && !selection.trim()) {
     return NextResponse.json({ ok: false, error: "Select some text before asking for a revision." }, { status: 422 });
   }
   if (!revising && !topic) {
     return NextResponse.json({ ok: false, error: "A topic is required." }, { status: 422 });
   }
+  const config = readGenerationConfig({ apiKey: process.env.XAI_API_KEY, model: process.env.XAI_MODEL });
+  if (!config) return unavailable();
 
   const urls = Array.isArray(body.urls) ? body.urls.map(String).map((url) => url.trim()).filter(Boolean).slice(0, 5) : [];
   const sources: SourcePage[] = [];
   for (const url of urls) {
-    const page = await fetchPublicSource(url, { lookup: lookupHost, fetch }).catch(() => null);
+    const page = await fetchPublicSource(url, { lookup: lookupHost, fetch: pinnedSourceFetch }).catch(() => null);
     if (page) sources.push(page);
   }
 

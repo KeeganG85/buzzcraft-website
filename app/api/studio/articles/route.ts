@@ -36,7 +36,7 @@ function asArticle(body: Record<string, unknown>, id: string, doc: ProseNode): A
     body: docToText(doc),
     hero_image: String(body.hero_image ?? "").trim(),
     hero_alt: String(body.hero_alt ?? "").trim(),
-    publish_date: String(body.publish_date ?? ""),
+    publish_date: body.publish_date == null ? null : String(body.publish_date).trim() || null,
     seo_title: String(body.seo_title ?? "").trim(),
     meta_description: String(body.meta_description ?? "").trim(),
     canonical: String(body.canonical ?? "").trim(),

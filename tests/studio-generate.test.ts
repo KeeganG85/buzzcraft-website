@@ -4,12 +4,15 @@ import {
   buildMessages,
   draftRecord,
   generationLog,
+  jsonSchemaFor,
   knowledgeLabel,
   parseGeneration,
   readGenerationConfig,
   sourcesFromSearch,
+  unsupportedSearchError,
 } from "@/lib/studio-generate";
-import { fetchPublicSource, isBlockedIp, publicHttpUrl } from "@/lib/studio-source";
+import { assertPublicUrl, fetchPublicSource, isBlockedIp, publicHttpUrl } from "@/lib/studio-source";
+import { createRevisionContext, sameRevisionContext } from "@/lib/studio-revision";
 import { studioVoice } from "@/lib/studio-voice";
 
 describe("generation config", () => {
@@ -58,9 +61,33 @@ describe("generation results", () => {
     if (!parsed || parsed.action !== "draft") throw new Error("expected a draft");
     const record = draftRecord(parsed.draft, false);
     expect(record.status).toBe("draft");
+    expect(record.publish_date).toBeNull();
     expect(record.claims_checked).toBe(false);
     expect(record.source_note).toBe(knowledgeLabel(false));
     expect(record.source_note).toContain("Unverified model knowledge");
+  });
+
+  it("aligns JSON schema limits with parser bounds", () => {
+    const schema = (action: "ideas" | "brief" | "outline" | "draft" | "rewrite") => jsonSchemaFor(action) as { properties: Record<string, { maxLength?: number; maxItems?: number; items?: { maxLength?: number } }> };
+    expect(schema("ideas").properties.ideas?.maxItems).toBe(8);
+    expect(schema("brief").properties.questions?.maxItems).toBe(8);
+    expect(schema("outline").properties.sections?.maxItems).toBe(10);
+    expect(schema("draft").properties.body?.maxLength).toBe(20000);
+    expect(schema("rewrite").properties.text?.maxLength).toBe(20000);
+  });
+
+  it("only classifies an explicit unsupported-search response for fallback", () => {
+    expect(unsupportedSearchError({ code: "unsupported_parameter", param: "search_parameters" })).toBe(true);
+    expect(unsupportedSearchError({ code: "invalid_request_error", message: "invalid model" })).toBe(false);
+    expect(unsupportedSearchError({ code: "unsupported_parameter", param: "temperature" })).toBe(false);
+  });
+
+  it("compares full document and selection snapshots to reject stale revisions", () => {
+    const before = createRevisionContext({ type: "doc", content: ["before"] }, 2, 8, "selected");
+    expect(sameRevisionContext(before, createRevisionContext({ type: "doc", content: ["before"] }, 2, 8, "selected"))).toBe(true);
+    expect(sameRevisionContext(before, createRevisionContext({ type: "doc", content: ["before"] }, 2, 8, "selected", 1))).toBe(false);
+    expect(sameRevisionContext(before, createRevisionContext({ type: "doc", content: ["changed"] }, 2, 8, "selected"))).toBe(false);
+    expect(sameRevisionContext(before, createRevisionContext({ type: "doc", content: ["before"] }, 3, 8, "elected"))).toBe(false);
   });
 
   it("does not keep model citations when search did not run", () => {
@@ -108,9 +135,29 @@ describe("source import", () => {
     expect(isBlockedIp("172.16.4.4")).toBe(true);
     expect(isBlockedIp("8.8.8.8")).toBe(false);
     expect(isBlockedIp("::1")).toBe(true);
+    expect(isBlockedIp("::ffff:8.8.8.8")).toBe(true);
+    expect(isBlockedIp("2001:4860:4860::8888")).toBe(false);
+    expect(isBlockedIp("2002:0808:0808::1")).toBe(true);
+    expect(isBlockedIp("2001:db8::1")).toBe(true);
+    expect(isBlockedIp("2001:4860::5efe:808:808")).toBe(true);
+    expect(isBlockedIp("198.18.0.1")).toBe(true);
+    expect(publicHttpUrl("http://2130706433/secret")).toBeNull();
+    expect(publicHttpUrl("http://0x08080808/")).toBeNull();
     expect(publicHttpUrl("http://127.0.0.1/latest")).toBeNull();
     expect(publicHttpUrl("javascript:alert(1)")).toBeNull();
     expect(publicHttpUrl("https://www.example.com/guide")).not.toBeNull();
+  });
+
+  it("rejects DNS answers if any address is private", async () => {
+    expect(await assertPublicUrl("https://mixed.example", async () => ["8.8.8.8", "10.0.0.1"])).toBeNull();
+  });
+
+  it("pins the selected approved DNS answer into the fetch callback", async () => {
+    const pinned: string[] = [];
+    const fetch = async (_url: string, _init: RequestInit, ip: string) => { pinned.push(ip); return new Response("<p>Public data</p>"); };
+    const page = await fetchPublicSource("https://public.example/guide", { lookup: async () => ["8.8.8.8", "1.1.1.1"], fetch });
+    expect(page?.text).toContain("Public data");
+    expect(pinned).toEqual(["8.8.8.8"]);
   });
 
   it("stops when a redirect resolves to a private address", async () => {

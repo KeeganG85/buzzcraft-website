@@ -7,6 +7,19 @@ export type GenerationAction = (typeof generationActions)[number];
 
 export type GenerationConfig = { apiKey: string; model: string };
 
+
+export function unsupportedSearchError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const item = error as { code?: unknown; param?: unknown; message?: unknown; type?: unknown };
+  const code = typeof item.code === "string" ? item.code.toLowerCase() : "";
+  const param = typeof item.param === "string" ? item.param.toLowerCase() : "";
+  const message = typeof item.message === "string" ? item.message.toLowerCase() : "";
+  const type = typeof item.type === "string" ? item.type.toLowerCase() : "";
+  return (code === "unsupported_parameter" && param === "search_parameters") ||
+    code === "unsupported_search" || type === "unsupported_search" ||
+    /(?:unsupported (?:parameter|feature)(?: named)? search_parameters|search_parameters (?:is|are) unsupported|search_parameters (?:is|are) not supported)/.test(message);
+}
+
 export function readGenerationConfig(env: { apiKey?: string | null; model?: string | null }): GenerationConfig | null {
   const apiKey = env.apiKey?.trim() ?? "";
   const model = env.model?.trim() ?? "";
@@ -197,6 +210,10 @@ function schemaHint(action: GenerationAction): string {
 }
 
 export function jsonSchemaFor(action: GenerationAction): Record<string, unknown> {
+  const boundedString = (maxLength: number) => ({ type: "string", minLength: 1, maxLength });
+  const boundedList = (maxItems: number, maxLength: number) => ({
+    type: "array", minItems: 1, maxItems, items: boundedString(maxLength),
+  });
   if (action === "ideas") {
     return {
       type: "object",
@@ -211,7 +228,7 @@ export function jsonSchemaFor(action: GenerationAction): Record<string, unknown>
             type: "object",
             additionalProperties: false,
             required: ["title", "angle"],
-            properties: { title: { type: "string" }, angle: { type: "string" } },
+            properties: { title: boundedString(180), angle: boundedString(400) },
           },
         },
       },
@@ -223,11 +240,11 @@ export function jsonSchemaFor(action: GenerationAction): Record<string, unknown>
       additionalProperties: false,
       required: ["workingTitle", "audience", "intent", "questions", "sections"],
       properties: {
-        workingTitle: { type: "string" },
-        audience: { type: "string" },
-        intent: { type: "string" },
-        questions: { type: "array", items: { type: "string" } },
-        sections: { type: "array", items: { type: "string" } },
+        workingTitle: boundedString(180),
+        audience: boundedString(240),
+        intent: boundedString(240),
+        questions: boundedList(8, 240),
+        sections: boundedList(8, 240),
       },
     };
   }
@@ -237,16 +254,16 @@ export function jsonSchemaFor(action: GenerationAction): Record<string, unknown>
       additionalProperties: false,
       required: ["title", "sections"],
       properties: {
-        title: { type: "string" },
+        title: boundedString(180),
         sections: {
-          type: "array",
+          type: "array", minItems: 1, maxItems: 10,
           items: {
             type: "object",
             additionalProperties: false,
             required: ["heading", "points"],
             properties: {
-              heading: { type: "string" },
-              points: { type: "array", items: { type: "string" } },
+              heading: boundedString(180),
+              points: boundedList(6, 240),
             },
           },
         },
@@ -259,13 +276,13 @@ export function jsonSchemaFor(action: GenerationAction): Record<string, unknown>
       additionalProperties: false,
       required: ["title", "h1", "excerpt", "body", "category", "seoTitle", "metaDescription"],
       properties: {
-        title: { type: "string" },
-        h1: { type: "string" },
-        excerpt: { type: "string" },
-        body: { type: "string" },
-        category: { type: "string" },
-        seoTitle: { type: "string" },
-        metaDescription: { type: "string" },
+        title: boundedString(180),
+        h1: boundedString(180),
+        excerpt: boundedString(400),
+        body: boundedString(20000),
+        category: boundedString(80),
+        seoTitle: boundedString(180),
+        metaDescription: boundedString(240),
       },
     };
   }
@@ -273,7 +290,7 @@ export function jsonSchemaFor(action: GenerationAction): Record<string, unknown>
     type: "object",
     additionalProperties: false,
     required: ["text"],
-    properties: { text: { type: "string" } },
+    properties: { text: boundedString(20000) },
   };
 }
 
@@ -331,7 +348,7 @@ export function draftRecord(draft: DraftResult, searched: boolean): Partial<Arti
     body: draft.body,
     hero_image: "",
     hero_alt: "",
-    publish_date: "",
+    publish_date: null,
     seo_title: draft.seoTitle,
     meta_description: draft.metaDescription,
     canonical: "",

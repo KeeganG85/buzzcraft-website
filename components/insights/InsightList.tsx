@@ -96,8 +96,10 @@ function InsightCard({ article, featured = false }: { article: PublicInsight; fe
   return (
     <article className={`overflow-hidden rounded-2xl border border-white/10 bg-surface ${featured ? "mt-8" : "h-full"}`}>
       <Link href={insightPath(article.slug)} className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={image.src} alt={image.alt} className={`w-full object-cover ${featured ? "max-h-80" : "h-48"}`} />
+        <div className={`overflow-hidden ${featured ? "aspect-[2/1] max-h-80" : "aspect-[3/2]"}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={image.src} alt={image.alt} className="h-full w-full object-cover" />
+        </div>
         <div className="p-5">
           {article.category ? <p className="text-sm text-gold">{article.category}</p> : null}
           <h2 className={`mt-2 font-semibold tracking-tight ${featured ? "text-3xl" : "text-xl"}`}>{article.title}</h2>

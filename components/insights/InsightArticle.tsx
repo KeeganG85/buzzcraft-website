@@ -68,7 +68,7 @@ export function InsightArticle({ article, related }: { article: PublicInsight; r
       </p>
       {article.hero_image.trim() ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={image.src} alt={image.alt} className="mt-8 max-h-[28rem] w-full rounded-2xl object-cover" />
+        <img src={image.src} alt={image.alt} width={1200} height={675} className="mt-8 aspect-[16/9] max-h-[28rem] w-full rounded-2xl object-cover" />
       ) : null}
       {article.excerpt ? (
         <section className="mt-8 max-w-2xl">

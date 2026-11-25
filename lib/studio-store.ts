@@ -1,4 +1,5 @@
-import type { ArticleRecord, ArticleVersionSnapshot, CaseStudyRecord, VersionPointer } from "@/lib/studio";
+import type { ArticleRecord, ArticleVersionSnapshot, CaseStudyRecord } from "@/lib/studio";
+import { countAssetUse } from "@/lib/studio-media";
 import { articleFromPublishedVersion, articleWithDraftContent, articlesWithNewestDraftTitles, isUuid, storageConfigured, versionContentFromArticle } from "@/lib/studio";
 import { docToHtml, docToText, isProseDoc, plainTextToDoc, type ProseNode } from "@/lib/studio-doc";
 import type { GenerationLog } from "@/lib/studio-generate";
@@ -37,12 +38,23 @@ type DraftVersionRow = {
   metadata_json?: Record<string, unknown>;
 };
 
-async function latestVersion(articleId: string): Promise<DraftVersionRow | null> {
-  if (!isUuid(articleId)) return null;
-  const rows = await rest<DraftVersionRow[]>(
-    `article_versions?article_id=eq.${articleId}&select=id,article_id,version_number,approval_status,content_json,metadata_json&order=version_number.desc&limit=1`,
-  );
-  return rows?.[0] ?? null;
+export type LatestVersionLookup =
+  | { state: "error"; reason: string }
+  | { state: "no-version" }
+  | { state: "version"; version: DraftVersionRow };
+
+export async function lookupLatestVersion(articleId: string): Promise<LatestVersionLookup> {
+  if (!isUuid(articleId)) return { state: "error", reason: "The article ID is invalid." };
+  try {
+    const rows = await rest<DraftVersionRow[]>(
+      `article_versions?article_id=eq.${articleId}&select=id,article_id,version_number,approval_status,content_json,metadata_json&order=version_number.desc&limit=1`,
+    );
+    if (!rows) return { state: "error", reason: "Article version storage could not be read." };
+    const version = rows[0];
+    return version ? { state: "version", version } : { state: "no-version" };
+  } catch {
+    return { state: "error", reason: "Article version storage could not be read." };
+  }
 }
 
 export async function listArticles(): Promise<ArticleRecord[] | null> {
@@ -61,7 +73,9 @@ export type WorkingArticle = ArticleRecord & { doc: ProseNode };
 export async function getWorkingArticle(id: string): Promise<WorkingArticle | null> {
   const row = await getArticle(id);
   if (!row) return null;
-  const latest = await latestVersion(id);
+  const lookup = await lookupLatestVersion(id);
+  if (lookup.state === "error") return null;
+  const latest = lookup.state === "version" ? lookup.version : null;
   if (!latest || latest.approval_status !== "draft") {
     const doc = isProseDoc(latest?.content_json?.doc) ? (latest?.content_json.doc as ProseNode) : plainTextToDoc(row.body);
     return { ...row, doc };
@@ -131,11 +145,9 @@ export async function findPublishedSlugRedirect(slug: string): Promise<string | 
 
 export async function saveDraftVersion(article: ArticleRecord, doc: ProseNode): Promise<boolean> {
   if (!isUuid(article.id)) return false;
-  const prior = await rest<VersionPointer[]>(
-    `article_versions?article_id=eq.${article.id}&select=id,version_number,approval_status&order=version_number.desc&limit=1`,
-  );
-  if (!prior) return false;
-  const latest = prior[0] ?? null;
+  const lookup = await lookupLatestVersion(article.id);
+  if (lookup.state === "error") return false;
+  const latest = lookup.state === "version" ? lookup.version : null;
   const content_json = { ...versionContentFromArticle({ ...article, body: docToText(doc) }), doc };
   const content_html = docToHtml(doc);
   const metadata_json = { slug: article.slug, publish_date: article.publish_date, status: article.status };
@@ -225,6 +237,68 @@ export async function listPublishedCaseStudies(): Promise<CaseStudyRecord[]> {
 export async function listCaseStudies(): Promise<CaseStudyRecord[] | null> {
   if (!storageConfigured()) return null;
   return rest<CaseStudyRecord[]>("case_studies?select=*&order=updated_at.desc");
+}
+
+export type ArticleVersionSummary = {
+  id: string;
+  version_number: number;
+  approval_status: string;
+  created_at: string;
+  revision_notes: string;
+};
+
+export async function listArticleVersions(articleId: string): Promise<ArticleVersionSummary[] | null> {
+  if (!isUuid(articleId) || !storageConfigured()) return null;
+  return rest<ArticleVersionSummary[]>(
+    `article_versions?article_id=eq.${articleId}&select=id,version_number,approval_status,created_at,revision_notes&order=version_number.desc`,
+  );
+}
+
+export async function listDueScheduledArticles(nowIso: string): Promise<ArticleRecord[] | null> {
+  if (!storageConfigured()) return null;
+  return rest<ArticleRecord[]>(
+    `studio_articles?status=eq.scheduled&scheduled_at=lte.${encodeURIComponent(nowIso)}&select=*`,
+  );
+}
+
+export type MediaAssetRecord = {
+  id: string;
+  storage_path: string;
+  public_url: string;
+  mime: string;
+  byte_size: number;
+  width: number | null;
+  height: number | null;
+  alt: string;
+};
+
+export async function listMediaAssets(): Promise<MediaAssetRecord[] | null> {
+  if (!storageConfigured()) return null;
+  return rest<MediaAssetRecord[]>("media_assets?select=*&order=created_at.desc");
+}
+
+export async function insertMediaAsset(asset: Omit<MediaAssetRecord, "id">): Promise<MediaAssetRecord | null> {
+  const rows = await rest<MediaAssetRecord[]>("media_assets", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(asset),
+  });
+  return rows?.[0] ?? null;
+}
+
+export async function mediaUsageCount(publicUrl: string, storagePath: string): Promise<number | null> {
+  const articles = await rest<{ hero_image: string | null }[]>("studio_articles?select=hero_image");
+  const versions = await rest<{ content_html: string | null; content_json: unknown }[]>(
+    "article_versions?select=content_html,content_json",
+  );
+  if (!articles || !versions) return null;
+  return countAssetUse({ publicUrl, storagePath }, articles, versions);
+}
+
+export async function deleteMediaAsset(id: string): Promise<boolean> {
+  if (!isUuid(id)) return false;
+  const rows = await rest<{ id: string }[]>(`media_assets?id=eq.${id}`, { method: "DELETE", headers: { Prefer: "return=representation" } });
+  return Boolean(rows);
 }
 
 export async function insertGenerationLog(entry: GenerationLog): Promise<boolean> {

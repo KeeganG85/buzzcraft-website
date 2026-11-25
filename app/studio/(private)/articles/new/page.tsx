@@ -10,7 +10,7 @@ export default function NewArticlePage() {
         A draft saves on its own. Publish stays a separate step, and it waits until the checklist is clear.
       </p>
       <div className="mt-8">
-        <EditorLoader />
+        <EditorLoader cronConfigured={Boolean(process.env.CRON_SECRET?.trim())} />
       </div>
     </div>
   );

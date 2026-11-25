@@ -41,7 +41,11 @@ export default function StudioLoginPage() {
           Password
           <input name="password" type="password" required autoComplete="current-password" className="mt-2 min-h-11 w-full rounded-lg border border-white/15 bg-ink px-3" />
         </label>
-        {error ? <p className="text-sm text-gold">{error}</p> : null}
+        {error ? (
+          <p className="text-sm text-gold" role="alert">
+            {error}
+          </p>
+        ) : null}
         <button className={buttonClass("primary")} type="submit" disabled={pending}>
           {pending ? "Checking" : "Sign in"}
         </button>

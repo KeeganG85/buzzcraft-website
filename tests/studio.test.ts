@@ -1,9 +1,12 @@
+import fs from "fs";
+import path from "path";
 import { describe, expect, it } from "vitest";
 import { insights } from "@/content/insights";
 import { loginRateLimiter, requestIp } from "@/lib/rate-limit";
 import {
   articleCounts,
   articleFromPublishedVersion,
+  publishedArticleHtml,
   articleSavePlan,
   articleStatuses,
   articleWithDraftContent,
@@ -116,12 +119,33 @@ describe("public article versions", () => {
     expect(published?.status).toBe("published");
   });
 
+  it("does not leak a draft version or the working row into public HTML", () => {
+    const row = article({
+      status: "published",
+      published_version_id: versionId,
+      body: "Working draft that must stay private",
+    });
+    expect(publishedArticleHtml(row, version({ content_html: "<p>Approved</p>" }))).toBe("<p>Approved</p>");
+    expect(publishedArticleHtml(row, version({ approval_status: "draft", content_html: "<p>Secret draft</p>" }))).toBeNull();
+    expect(publishedArticleHtml(article({ status: "draft", published_version_id: versionId }), version({ content_html: "<p>Secret draft</p>" }))).toBeNull();
+    expect(JSON.stringify(articleFromPublishedVersion(row, version()))).not.toContain("Working draft that must stay private");
+  });
+
   it("drops a published row with no approved version", () => {
     const row = article({ status: "published", published_version_id: versionId });
     expect(articleFromPublishedVersion(row, null)).toBeNull();
     expect(articleFromPublishedVersion(row, version({ approval_status: "draft" }))).toBeNull();
     expect(articleFromPublishedVersion(row, version({ article_id: "other" }))).toBeNull();
     expect(articleFromPublishedVersion(article({ status: "published" }), version())).toBeNull();
+  });
+});
+
+describe("studio session cookie", () => {
+  it("keeps the login cookie httpOnly and SameSite Lax", () => {
+    const route = fs.readFileSync(path.join(process.cwd(), "app/api/studio/login/route.ts"), "utf8");
+    expect(route).toContain('sameSite: "lax"');
+    expect(route).toContain("httpOnly: true");
+    expect(route).not.toContain("csrf");
   });
 });
 

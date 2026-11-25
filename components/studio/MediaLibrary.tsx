@@ -81,7 +81,7 @@ export function MediaLibrary({ storageReady }: { storageReady: boolean }) {
         <label className="block text-sm font-semibold">
           Image file
           <input
-            className="mt-2 block w-full text-sm"
+            className="mt-2 block min-h-11 w-full text-sm"
             type="file"
             accept="image/jpeg,image/png,image/webp,image/avif,image/svg+xml"
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}

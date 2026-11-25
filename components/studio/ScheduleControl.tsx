@@ -56,7 +56,11 @@ export function ScheduleControl({
       <button type="button" className={buttonClass("secondary")} disabled={!articleId || !value} onClick={() => void save()}>
         Save schedule
       </button>
-      {message ? <p className="text-sm text-mid">{message}</p> : null}
+      {message ? (
+        <p className="text-sm text-mid" role="status">
+          {message}
+        </p>
+      ) : null}
     </div>
   );
 }

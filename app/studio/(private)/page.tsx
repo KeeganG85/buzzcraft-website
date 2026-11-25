@@ -83,7 +83,7 @@ export default async function StudioHomePage() {
       <ul className="mt-3 space-y-2 text-sm">
         {(articles ?? []).map((item) => (
           <li key={item.id}>
-            <Link className="text-gold" href={`/studio/articles/${item.id}/`}>
+            <Link className="inline-flex min-h-11 items-center text-gold" href={`/studio/articles/${item.id}/`}>
               {item.title}
             </Link>{" "}
             <span className="text-mid">{item.status}</span>
@@ -91,16 +91,14 @@ export default async function StudioHomePage() {
         ))}
         {articles && articles.length === 0 ? <li className="text-mid">Nothing is stored yet.</li> : null}
       </ul>
-      <p className="mt-4">
-        <Link className="font-semibold text-gold" href="/studio/articles/new/">
+      <p className="mt-4 flex flex-wrap gap-4">
+        <Link className="inline-flex min-h-11 items-center font-semibold text-gold" href="/studio/articles/new/">
           New article
         </Link>
-        {" "}
-        <Link className="font-semibold text-gold" href="/studio/generate/">
+        <Link className="inline-flex min-h-11 items-center font-semibold text-gold" href="/studio/generate/">
           Generate
         </Link>
-        {" "}
-        <Link className="font-semibold text-gold" href="/studio/media/">
+        <Link className="inline-flex min-h-11 items-center font-semibold text-gold" href="/studio/media/">
           Media
         </Link>
       </p>

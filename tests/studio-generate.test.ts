@@ -146,6 +146,10 @@ describe("source import", () => {
     expect(publicHttpUrl("http://127.0.0.1/latest")).toBeNull();
     expect(publicHttpUrl("javascript:alert(1)")).toBeNull();
     expect(publicHttpUrl("https://www.example.com/guide")).not.toBeNull();
+    expect(publicHttpUrl("file:///etc/passwd")).toBeNull();
+    expect(publicHttpUrl("http://user:secret@www.example.com/")).toBeNull();
+    expect(publicHttpUrl("http://2130706433/")).toBeNull();
+    expect(publicHttpUrl("http://[::1]/")).toBeNull();
   });
 
   it("rejects DNS answers if any address is private", async () => {
@@ -166,6 +170,46 @@ describe("source import", () => {
       new Response(null, { status: 302, headers: { location: "http://loop.example/secret" } });
     const page = await fetchPublicSource("https://public.example/start", { lookup, fetch: fetchImpl });
     expect(page).toBeNull();
+  });
+
+  it("does not fetch a private address, a metadata redirect, or an oversized page", async () => {
+    let calls = 0;
+    const lookup = async (hostname: string) => (hostname === "public.example" ? ["8.8.8.8"] : ["169.254.169.254"]);
+    const blocked = await fetchPublicSource("http://169.254.169.254/latest", {
+      lookup,
+      fetch: async () => {
+        calls += 1;
+        return new Response("secret");
+      },
+    });
+    expect(blocked).toBeNull();
+    expect(calls).toBe(0);
+
+    const redirected = await fetchPublicSource("https://public.example/start", {
+      lookup,
+      fetch: async () => new Response(null, { status: 302, headers: { location: "http://169.254.169.254/latest" } }),
+    });
+    expect(redirected).toBeNull();
+
+    const oversized = await fetchPublicSource("https://public.example/large", {
+      lookup,
+      fetch: async () => {
+        const chunk = new Uint8Array(100_000);
+        let sent = 0;
+        const stream = new ReadableStream({
+          pull(controller) {
+            if (sent >= 250_000) {
+              controller.close();
+              return;
+            }
+            controller.enqueue(chunk);
+            sent += chunk.byteLength;
+          },
+        });
+        return new Response(stream, { status: 200 });
+      },
+    });
+    expect(oversized).toBeNull();
   });
 });
 

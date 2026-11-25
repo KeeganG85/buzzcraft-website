@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
+import { loginRateLimiter, requestIp } from "@/lib/rate-limit";
 import { signStudioSession, studioCookie, studioConfigured, verifyStudioPassword } from "@/lib/studio";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  if (loginRateLimiter.limited(requestIp(request))) {
+    return NextResponse.json(
+      { ok: false, error: "Too many attempts. Please try again shortly." },
+      { status: 429 },
+    );
+  }
   if (!studioConfigured()) {
     return NextResponse.json(
       { ok: false, error: "Studio login is not configured. Set STUDIO_EMAIL, STUDIO_PASSWORD_HASH and STUDIO_SESSION_SECRET." },

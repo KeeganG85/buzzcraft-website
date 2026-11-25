@@ -88,9 +88,10 @@ export default function AboutPage() {
       </ul>
 
       <p className="mt-10 max-w-2xl border border-gold/40 bg-surface p-4 text-sm leading-6">
-        Owner input still required: the registered legal name and the Information Officer are
-        unknown. They are not invented here. The public name is BuzzCraft, based in Johannesburg.
-        There is no street address on this site.
+        The registered name is {siteConfig.legalEntity.registeredName}, registration number{" "}
+        {siteConfig.legalEntity.registrationNumber}. VAT number and Information Officer remain
+        owner input. The public name is BuzzCraft, based in Johannesburg. There is no street
+        address on this site.
       </p>
       <WhatsAppLink className={`${buttonClass("primary")} mt-8`}>WhatsApp BuzzCraft</WhatsAppLink>
     </Container>

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { organizationJsonLd, professionalServiceJsonLd, webSiteJsonLd } from "@/lib/jsonld";
 import { legacyRedirects } from "@/lib/redirects";
 import { blockedPaths, indexablePaths } from "@/lib/routes";
-import { absoluteUrl, canonicalPath } from "@/lib/seo";
+import { absoluteUrl, canonicalPath, deploymentRobots } from "@/lib/seo";
 
 describe("canonical policy", () => {
   it("uses www and a trailing slash on directory routes", () => {
@@ -11,6 +11,16 @@ describe("canonical policy", () => {
     expect(canonicalPath("/services/")).toBe("/services/");
     expect(absoluteUrl("/services")).toBe("https://www.buzzcraft.co.za/services/");
     expect(absoluteUrl("/sitemap.xml")).toBe("https://www.buzzcraft.co.za/sitemap.xml");
+  });
+
+  it("noindexes Vercel preview deployments only", () => {
+    const previous = process.env.VERCEL_ENV;
+    process.env.VERCEL_ENV = "preview";
+    expect(deploymentRobots()).toEqual({ index: false, follow: false });
+    process.env.VERCEL_ENV = "production";
+    expect(deploymentRobots()).toBeUndefined();
+    if (previous === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = previous;
   });
 
   it("keeps legacy redirects permanent and does not send about or contact away", () => {

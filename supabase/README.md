@@ -41,7 +41,9 @@ Stores the registration that unlocks The 120 Prompt OS. Columns: first name, ema
 
 Migration: `migrations/20261116110000_studio.sql`. Applied with the other files.
 
-`studio_articles` holds the private article builder. A row is public only when `status` is `published`. The checklist in `lib/studio.ts` blocks publish when the title, H1, slug, excerpt, author, body, alt text, SEO title, meta description, canonical, source note or claims check is missing. Duplicate slugs are rejected. There is no external writing model.
+`studio_articles` holds the private article builder. A row is public only when `status` is `published` and `published_version_id` points at an approved row in `article_versions`. Draft, in review, approved, scheduled and archived rows stay private. The checklist in `lib/studio.ts` blocks publish when the title, H1, slug, excerpt, author, body, alt text, SEO title, meta description, canonical, source note or claims check is missing. Duplicate slugs are rejected. There is no external writing model.
+
+Migration `migrations/20261124183000_studio_article_versions.sql` adds `article_versions` and copies each existing article into version 1. It widens `status` and does not drop columns or delete rows. The flat article columns stay until a later phase edits through versions. `content_html` in that backfill is the plain-text body.
 
 `case_studies` holds studies added later in Studio. The two approved studies also live in `content/case-studies.ts`.
 

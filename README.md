@@ -46,4 +46,6 @@ npm run studio:hash -- "your password"
 
 Copy the printed `scrypt$...` line into `STUDIO_PASSWORD_HASH`. Put the Studio login email in `STUDIO_EMAIL`. Do not commit either value.
 
+The Studio login limiter is an in-memory cap of five attempts per ten minutes **per application instance**, not a global cap. Login ignores `X-Forwarded-For` until the actual ingress is verified, so requests share one unknown-address bucket per instance. This code does not claim active production protection while the public route is unverified.
+
 Nothing in this repository deploys the site, promotes a deployment, or changes DNS, Hostinger or the CDN.

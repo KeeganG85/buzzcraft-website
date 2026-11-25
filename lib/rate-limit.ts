@@ -4,8 +4,8 @@ const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 type Bucket = { count: number; reset: number };
 
 /**
- * In-memory limit, same shape as the Scorecard route.
- * Each serverless instance keeps its own map, so the limit resets when that instance goes away.
+ * In-memory limit. Each serverless instance keeps its own map, so this is not a
+ * global cap and resets when that instance goes away.
  */
 export function createRateLimiter(limit: number, windowMs: number) {
   const hits = new Map<string, Bucket>();
@@ -27,6 +27,15 @@ export function createRateLimiter(limit: number, windowMs: number) {
 
 export const loginRateLimiter = createRateLimiter(LOGIN_LIMIT, LOGIN_WINDOW_MS);
 
-export function requestIp(request: Request): string {
+/**
+ * Forwarded addresses are usable only when the caller has verified the actual
+ * trusted ingress. Studio login currently has no such verification, so it opts
+ * out and all requests share an `unknown` bucket within each application instance.
+ */
+export function requestIp(
+  request: Request,
+  options: { trustForwardedFor?: boolean } = {},
+): string {
+  if (options.trustForwardedFor === false) return "unknown";
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 }

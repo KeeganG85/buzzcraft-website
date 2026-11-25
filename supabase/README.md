@@ -45,6 +45,8 @@ Migration: `migrations/20261116110000_studio.sql`. Applied with the other files.
 
 Migration `migrations/20261124183000_studio_article_versions.sql` adds `article_versions` and copies each existing article into version 1. It widens `status` and does not drop columns or delete rows. The flat article columns stay until a later phase edits through versions. `content_html` in that backfill is the plain-text body.
 
+Migration `migrations/20261124200000_studio_generation.sql` adds `ai_generation_logs` and `article_sources`. Logs keep the model name, status, token counts and an error class. They do not store prompts, keys or client notes. Source rows stay `verified = false` until a person checks them.
+
 `case_studies` holds studies added later in Studio. The two approved studies also live in `content/case-studies.ts`.
 
 Studio login uses `STUDIO_EMAIL`, `STUDIO_PASSWORD_HASH` and `STUDIO_SESSION_SECRET`. The session cookie is httpOnly and signed. `/studio` is disallowed in robots and is not in the sitemap.

@@ -10,8 +10,10 @@ import { useRouter } from "next/navigation";
 import type { ArticleRecord } from "@/lib/studio";
 import { slugifyTitle } from "@/lib/studio-slug";
 import { publishChecklist } from "@/lib/studio-checklist";
-import { readingMinutes, wordCount, type ProseNode } from "@/lib/studio-doc";
+import { plainTextToDoc, readingMinutes, wordCount, type ProseNode } from "@/lib/studio-doc";
 import { SerialTaskQueue } from "@/lib/studio-save";
+import { AiRevision } from "@/components/studio/AiRevision";
+import { createRevisionContext, sameRevisionContext } from "@/lib/studio-revision";
 import { buttonClass } from "@/components/ui/primitives";
 
 type OutlineItem = { level: number; text: string; pos: number };
@@ -83,6 +85,7 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
   const [linkHref, setLinkHref] = useState("");
   const [markdown, setMarkdown] = useState("");
   const articleId = useRef(initial?.id ?? "");
+  const revisionEpoch = useRef(0);
   const changeCount = useRef(0);
   const savedChangeCount = useRef(0);
   const pendingSaves = useRef(0);
@@ -120,10 +123,15 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
       setText(current.getText({ blockSeparator: "\n\n" }));
       setOutline(readOutline(current));
     },
+    onSelectionUpdate: () => {
+      revisionEpoch.current += 1;
+    },
     onUpdate: ({ editor: current }) => {
+      revisionEpoch.current += 1;
       markChanged();
       setText(current.getText({ blockSeparator: "\n\n" }));
       setOutline(readOutline(current));
+      setClaimsChecked(false);
     },
   });
 
@@ -143,7 +151,7 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
       tags,
       hero_image: heroImage,
       hero_alt: heroAlt,
-      publish_date: publishDate,
+      publish_date: publishDate || null,
       seo_title: seoTitle,
       meta_description: metaDescription,
       canonical,
@@ -304,7 +312,7 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
       body: text,
       hero_image: heroImage,
       hero_alt: heroAlt,
-      publish_date: publishDate,
+      publish_date: publishDate || null,
       seo_title: seoTitle,
       meta_description: metaDescription,
       canonical,
@@ -456,6 +464,27 @@ export function ArticleEditor({ initial }: { initial?: Partial<ArticleRecord> & 
           ))}
         </ul>
       ) : null}
+      <AiRevision
+        getContext={() => {
+          if (!editor) return createRevisionContext(null, 0, 0, "", revisionEpoch.current);
+          const selection = editor.state.selection;
+          const selectedText = editor.state.doc.textBetween(selection.from, selection.to, "\n\n");
+          return createRevisionContext(editor.getJSON(), selection.from, selection.to, selectedText, revisionEpoch.current);
+        }}
+        onAccepted={(next, context) => {
+          if (!editor) return false;
+          const selection = editor.state.selection;
+          const current = createRevisionContext(
+            editor.getJSON(),
+            selection.from,
+            selection.to,
+            editor.state.doc.textBetween(selection.from, selection.to, "\n\n"),
+            revisionEpoch.current,
+          );
+          if (!sameRevisionContext(context, current)) return false;
+          return editor.chain().insertContentAt({ from: context.from, to: context.to }, plainTextToDoc(next).content ?? []).run();
+        }}
+      />
       <div className="flex flex-wrap gap-3">
         <button type="button" className={buttonClass("secondary")} onClick={() => void send("save")}>
           Save draft

@@ -1,6 +1,7 @@
 import type { ArticleRecord, ArticleVersionSnapshot, CaseStudyRecord, VersionPointer } from "@/lib/studio";
 import { articleFromPublishedVersion, articleWithDraftContent, articlesWithNewestDraftTitles, isUuid, storageConfigured, versionContentFromArticle } from "@/lib/studio";
 import { docToHtml, docToText, isProseDoc, plainTextToDoc, type ProseNode } from "@/lib/studio-doc";
+import type { GenerationLog } from "@/lib/studio-generate";
 
 function db() {
   const url = process.env.SUPABASE_URL?.replace(/\/$/, "");
@@ -205,6 +206,36 @@ export async function listPublishedCaseStudies(): Promise<CaseStudyRecord[]> {
 export async function listCaseStudies(): Promise<CaseStudyRecord[] | null> {
   if (!storageConfigured()) return null;
   return rest<CaseStudyRecord[]>("case_studies?select=*&order=updated_at.desc");
+}
+
+export async function insertGenerationLog(entry: GenerationLog): Promise<boolean> {
+  const rows = await rest<{ id: string }[]>("ai_generation_logs", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(entry),
+  });
+  return Boolean(rows?.[0]);
+}
+
+export async function insertArticleSources(
+  articleId: string,
+  sources: { title: string; url: string; claim: string }[],
+): Promise<boolean> {
+  if (!isUuid(articleId) || sources.length === 0) return false;
+  const rows = await rest<{ id: string }[]>("article_sources", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(
+      sources.map((source) => ({
+        article_id: articleId,
+        title: source.title,
+        url: source.url,
+        claim: source.claim,
+        verified: false,
+      })),
+    ),
+  });
+  return Boolean(rows && rows.length > 0);
 }
 
 export async function saveCaseStudy(study: Omit<CaseStudyRecord, "id"> & { id?: string }): Promise<CaseStudyRecord | null> {

@@ -32,7 +32,7 @@ export type ArticleRecord = {
   body: string;
   hero_image: string;
   hero_alt: string;
-  publish_date: string;
+  publish_date: string | null;
   seo_title: string;
   meta_description: string;
   canonical: string;
@@ -236,7 +236,7 @@ export function articleWithDraftContent(
     if (typeof content.claims_checked === "boolean") next.claims_checked = content.claims_checked;
   }
   if (metadata && typeof metadata.slug === "string" && metadata.slug.trim()) next.slug = metadata.slug;
-  if (metadata && typeof metadata.publish_date === "string") next.publish_date = metadata.publish_date;
+  if (metadata && (typeof metadata.publish_date === "string" || metadata.publish_date === null)) next.publish_date = metadata.publish_date;
   next.id = row.id;
   next.status = row.status;
   next.published_version_id = row.published_version_id;
